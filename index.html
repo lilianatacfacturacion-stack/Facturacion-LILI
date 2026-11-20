@@ -1471,9 +1471,39 @@ function backupJSON() {
   toast('Backup descargado');
 }
 
-// Botón backup en header
+// Restaurar / importar backup (FUSIONA: no borra lo que ya hay)
+function importarBackup(e) {
+  const file = e.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const d = JSON.parse(ev.target.result);
+      const fac = getData('facturas', []), cli = getData('clientes', []), gas = getData('gastos', []);
+      let nf = 0, nc = 0, ng = 0;
+      (d.facturas || []).forEach(f => {
+        if (!fac.find(x => x.id === f.id || (x.numero && x.numero === f.numero))) { fac.push(f); nf++; }
+      });
+      (d.clientes || []).forEach(c => {
+        if (!cli.find(x => x.id === c.id)) { cli.push(c); nc++; }
+      });
+      (d.gastos || []).forEach(g => {
+        if (!gas.find(x => x.id === g.id)) { gas.push(g); ng++; }
+      });
+      if (!confirm(`Se añadirán ${nf} facturas, ${nc} clientes y ${ng} gastos nuevos.\nLo que ya tienes no se toca. ¿Continuar?`)) { e.target.value=''; return; }
+      setData('facturas', fac); setData('clientes', cli); setData('gastos', gas);
+      const un = Math.max(getData('ultimo_num', 0) || 0, d.ultimo_num || 0);
+      setData('ultimo_num', un);
+      alert(`✓ Importado: ${nf} facturas, ${nc} clientes, ${ng} gastos`);
+      location.reload();
+    } catch(err) { alert('El archivo no es un backup válido'); }
+  };
+  reader.readAsText(file);
+}
+
+// Botones backup / restaurar en header
 document.querySelector('header').insertAdjacentHTML('beforeend',
-  '<button class="btn btn-ghost btn-sm" style="margin-left:8px;font-size:0.75rem" onclick="backupJSON()">💾 Backup</button>'
+  '<button class="btn btn-ghost btn-sm" style="margin-left:8px;font-size:0.75rem" onclick="backupJSON()">💾 Backup</button>' +
+  '<label class="btn btn-ghost btn-sm" style="margin-left:6px;font-size:0.75rem;cursor:pointer">📂 Restaurar<input type="file" accept=".json,application/json" style="display:none" onchange="importarBackup(event)"></label>'
 );
 
 // ========== INIT ==========
