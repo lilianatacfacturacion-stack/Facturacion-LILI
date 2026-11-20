@@ -376,9 +376,42 @@ tr:hover td { background: var(--surface2); }
 <div id="tab-conciliacion" class="tab">
   <div class="card">
     <h2>Conciliación bancaria</h2>
-    <p style="color:var(--muted);margin-bottom:16px">Importa el extracto bancario en Excel (.xlsx o .csv) para cotejar con tus facturas.</p>
-    <input type="file" id="banco-file" accept=".csv,.xlsx" onchange="importarBanco(event)" style="margin-bottom:12px">
-    <div id="banco-resultado"></div>
+    <p style="color:var(--muted);margin-bottom:12px">Carga el Excel de movimientos de Caja Rural (.xlsx o .csv). Se guarda solo en este dispositivo. Puedes cargar varios archivos: los movimientos repetidos se ignoran.</p>
+    <label class="btn btn-primary" style="cursor:pointer;display:inline-flex;margin-top:0">📂 Cargar Excel del banco
+      <input type="file" id="banco-file" accept=".xlsx,.xls,.csv" onchange="importarBanco(event)" style="display:none">
+    </label>
+    <div id="banco-resultado" style="margin-top:12px"></div>
+  </div>
+  <div class="card" style="margin-top:16px">
+    <div class="card-header">
+      <h2>Movimientos del banco</h2>
+      <button class="btn btn-ghost btn-sm" onclick="conciliarAuto(true)">🔄 Conciliar de nuevo</button>
+    </div>
+    <div class="grid3" style="margin-bottom:12px">
+      <div><label>Ver</label>
+        <select id="filtro-banco" onchange="renderBanco()">
+          <option value="cobros-sin">Cobros sin factura</option>
+          <option value="cobros-con">Cobros conciliados</option>
+          <option value="pagos-sin">Pagos sin registrar</option>
+          <option value="pagos">Todos los pagos</option>
+          <option value="todos">Todos</option>
+        </select>
+      </div>
+      <div><label>Mes</label>
+        <select id="filtro-banco-mes" onchange="renderBanco()">
+          <option value="">Todos</option><option value="01">Enero</option><option value="02">Febrero</option><option value="03">Marzo</option>
+          <option value="04">Abril</option><option value="05">Mayo</option><option value="06">Junio</option><option value="07">Julio</option>
+          <option value="08">Agosto</option><option value="09">Septiembre</option><option value="10">Octubre</option><option value="11">Noviembre</option><option value="12">Diciembre</option>
+        </select>
+      </div>
+      <div style="display:flex;align-items:flex-end"><span id="banco-contador" style="color:var(--muted);font-size:0.8rem"></span></div>
+    </div>
+    <div style="overflow-x:auto">
+    <table>
+      <thead><tr><th>Fecha</th><th>Concepto banco</th><th>Importe</th><th>Vinculado a</th><th>Acción</th></tr></thead>
+      <tbody id="tabla-banco"></tbody>
+    </table>
+    </div>
   </div>
   <div class="card" style="margin-top:16px">
     <h3>Facturas pendientes de cobro</h3>
@@ -748,7 +781,7 @@ function showTab(name) {
   if (name==='clientes') renderClientes();
   if (name==='gastos') renderGastos();
   if (name==='lotes') renderLotePeriodos();
-  if (name==='conciliacion') renderPendientes();
+  if (name==='conciliacion') { renderPendientes(); renderBanco(); }
   if (name==='nueva') initNuevaForm();
   if (name==='ajustes') cargarFormConfig();
   if (name==='modelos') renderModelos();
@@ -1545,10 +1578,227 @@ function marcarCobrada(id) {
   toast('Marcada como cobrada');
 }
 
-function importarBanco(e) {
-  const file = e.target.files[0];
-  if (!file) return;
-  document.getElementById('banco-resultado').innerHTML = `<p style="color:var(--warn)">📄 ${file.name} cargado. Funcionalidad de conciliación automática en desarrollo. Puedes marcar facturas como cobradas manualmente desde la tabla inferior.</p>`;
+// ========== CONCILIACIÓN BANCARIA ==========
+function cargarSheetJS() {
+  return new Promise((ok, ko) => {
+    if (window.XLSX) return ok();
+    const sc = document.createElement('script');
+    sc.src = 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
+    sc.onload = ok; sc.onerror = () => ko(new Error('No se pudo cargar el lector de Excel. ¿Tienes conexión?'));
+    document.head.appendChild(sc);
+  });
+}
+function toISO(v) {
+  if (!v && v !== 0) return '';
+  if (Object.prototype.toString.call(v) === '[object Date]') { const d = new Date(v.getTime() - v.getTimezoneOffset()*60000); return d.toISOString().slice(0,10); }
+  if (typeof v === 'number') { const d = new Date(Math.round((v - 25569) * 86400000)); return d.toISOString().slice(0,10); }
+  const t = String(v).trim();
+  let m = t.match(/^(\d{4})-(\d{2})-(\d{2})/); if (m) return `${m[1]}-${m[2]}-${m[3]}`;
+  m = t.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})/);
+  if (m) { const y = m[3].length===2 ? '20'+m[3] : m[3]; return `${y}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`; }
+  return '';
+}
+function toNum(v) {
+  if (typeof v === 'number') return v;
+  if (v == null) return NaN;
+  let t = String(v).replace(/[€\s]/g,'');
+  if (t.includes(',') && t.lastIndexOf(',') > t.lastIndexOf('.')) t = t.replace(/\./g,'').replace(',', '.');
+  else t = t.replace(/,/g,'');
+  return parseFloat(t);
+}
+// Lo que realmente entra en el banco: total menos la retención de IRPF
+function liquidoFactura(f) { return Math.round(((f.total||0) - (f.irpf ? (f.irpf_imp||0) : 0)) * 100) / 100; }
+function cuadraImporte(f, imp) { return Math.abs(liquidoFactura(f) - imp) < 0.01 || Math.abs((f.total||0) - imp) < 0.01; }
+function restarDias(iso, n) { const d = new Date(iso); d.setDate(d.getDate() - n); return d.toISOString().slice(0,10); }
+// Factura aún no enlazada a ningún movimiento (pendiente, o cobrada a mano sin justificar)
+function sinMov(f) { return !f.mov_banco; }
+function idsMov(m) { return m.factura_ids || (m.factura_id ? [m.factura_id] : []); }
+function setIdsMov(m, ids) { m.factura_ids = ids; m.factura_id = ids[0] || null; }
+function normTxt(t) { return (t||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9 ]/g,' '); }
+
+async function importarBanco(e) {
+  const file = e.target.files[0]; if (!file) return;
+  const out = document.getElementById('banco-resultado');
+  out.innerHTML = '<p style="color:var(--muted)">Leyendo ' + file.name + '…</p>';
+  try {
+    await cargarSheetJS();
+    const buf = await file.arrayBuffer();
+    const wb = XLSX.read(buf, { type:'array', cellDates:true });
+    const filas = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header:1, raw:true, defval:null });
+    // Buscar fila de cabecera
+    let h = -1;
+    for (let i = 0; i < Math.min(filas.length, 30); i++) {
+      const t = (filas[i]||[]).map(x => normTxt(String(x||'')));
+      if (t.some(x => x.includes('importe')) && t.some(x => x.includes('fecha'))) { h = i; break; }
+    }
+    if (h < 0) throw new Error('No encuentro las columnas Fecha e Importe en el Excel.');
+    const cab = filas[h].map(x => normTxt(String(x||'')));
+    const col = (...keys) => cab.findIndex(c => keys.some(k => c.includes(k)));
+    const cF = col('fecha de la operacion','fecha operacion','fecha');
+    const cC = col('tipo movimiento','concepto','descripcion','movimiento');
+    const cI = col('importe');
+    const cS = col('saldo');
+    const cN = col('apunte','nro','referencia');
+    if (cF < 0 || cI < 0 || cC < 0) throw new Error('Faltan columnas de fecha, concepto o importe.');
+
+    const banco = getData('banco', []);
+    let nuevos = 0, repetidos = 0;
+    for (let i = h+1; i < filas.length; i++) {
+      const r = filas[i]; if (!r) continue;
+      const fecha = toISO(r[cF]); const imp = toNum(r[cI]);
+      if (!fecha || isNaN(imp)) continue;
+      const saldo = cS >= 0 ? toNum(r[cS]) : NaN;
+      const nro = cN >= 0 && r[cN] != null ? String(r[cN]) : '';
+      const concepto = String(r[cC]||'').trim();
+      const id = `b_${fecha}_${nro}_${imp.toFixed(2)}_${isNaN(saldo)?'':saldo.toFixed(2)}`;
+      if (banco.find(x => x.id === id)) { repetidos++; continue; }
+      banco.push({ id, fecha, concepto, importe: Math.round(imp*100)/100, saldo: isNaN(saldo)?null:saldo, nro, factura_id:null });
+      nuevos++;
+    }
+    setData('banco', banco);
+    const conc = conciliarAuto(false);
+    out.innerHTML = `<div style="padding:10px 12px;border-radius:8px;background:rgba(34,197,94,0.12);color:#86efac">
+      ✓ ${file.name}: <strong>${nuevos}</strong> movimientos nuevos${repetidos ? ` (${repetidos} ya estaban)` : ''}.
+      <strong>${conc}</strong> facturas conciliadas automáticamente con el banco.</div>`;
+    renderPendientes(); renderBanco();
+  } catch(err) {
+    out.innerHTML = `<p style="color:var(--danger)">⚠️ ${err.message}</p>`;
+  }
+  e.target.value = '';
+}
+
+// Cruza cobros del banco con facturas pendientes: mismo importe + nombre del cliente en el concepto
+function conciliarAuto(avisar) {
+  const banco = getData('banco', []), facturas = getData('facturas', []);
+  let n = 0;
+  banco.filter(m => m.importe > 0 && !idsMov(m).length).sort((a,b)=>a.fecha.localeCompare(b.fecha)).forEach(m => {
+    const conc = normTxt(m.concepto);
+    const cands = facturas.filter(f => sinMov(f) && cuadraImporte(f, m.importe) && restarDias(toISO(f.fecha), 0) <= restarDias(m.fecha, -15));
+    const porNumero = cands.filter(f => f.numero && conc.includes(normTxt(f.numero).trim()));
+    const conNombre = porNumero.length ? porNumero : cands.filter(f => {
+      const pal = normTxt(f.cliente_nombre).split(' ').filter(w => w.length >= 4);
+      const hits = pal.filter(w => conc.includes(w)).length;
+      return hits >= Math.min(2, pal.length);
+    });
+    if (conNombre.length) {
+      conNombre.sort((a,b) => toISO(a.fecha).localeCompare(toISO(b.fecha)));
+      const f = conNombre[0];
+      f.estado = 'cobrada'; f.fecha_cobro = m.fecha; f.mov_banco = m.id; setIdsMov(m, [f.id]); n++;
+    }
+  });
+  // Remesas de recibos: un abono que suma varias facturas. Solo se aplica si hay UNA combinación exacta.
+  banco.filter(m => m.importe > 0 && !idsMov(m).length && /rem/i.test(m.concepto)).sort((a,b)=>a.fecha.localeCompare(b.fecha)).forEach(m => {
+    const cands = facturas.filter(f => sinMov(f) && toISO(f.fecha) <= m.fecha && toISO(f.fecha) >= restarDias(m.fecha, 75));
+    const objetivo = Math.round(m.importe * 100);
+    const vals = cands.map(f => Math.round(liquidoFactura(f) * 100));
+    const sols = []; let pasos = 0;
+    (function dfs(i, suma, sel) {
+      if (sols.length > 1 || ++pasos > 200000) return;
+      if (suma === objetivo) { sols.push([...sel]); return; }
+      if (i >= vals.length || suma > objetivo || sel.length >= 10) return;
+      sel.push(i); dfs(i+1, suma + vals[i], sel); sel.pop();
+      dfs(i+1, suma, sel);
+    })(0, 0, []);
+    if (sols.length === 1 && pasos <= 200000) {
+      const fs = sols[0].map(i => cands[i]);
+      fs.forEach(f => { f.estado = 'cobrada'; f.fecha_cobro = m.fecha; f.mov_banco = m.id; n++; });
+      setIdsMov(m, fs.map(f => f.id));
+    }
+  });
+  setData('banco', banco); setData('facturas', facturas);
+  if (avisar) { toast(n ? `${n} facturas conciliadas` : 'No hay nuevas coincidencias seguras'); renderPendientes(); renderBanco(); }
+  return n;
+}
+
+function vincularMov(movId) {
+  const sel = document.getElementById('sel_' + movId); if (!sel || !sel.value) { toast('Elige una factura', 'warn'); return; }
+  const banco = getData('banco', []), facturas = getData('facturas', []);
+  const m = banco.find(x => x.id === movId), f = facturas.find(x => x.id === sel.value);
+  if (!m || !f) return;
+  const yaVinc = idsMov(m).map(id => facturas.find(x => x.id === id)).filter(Boolean).reduce((s,x) => s + liquidoFactura(x), 0);
+  const resto = Math.round((m.importe - yaVinc) * 100) / 100;
+  if (!cuadraImporte(f, resto) && liquidoFactura(f) > resto + 0.01 && !confirm(`El importe no coincide (${fmtNum(m.importe)} € en banco / ${fmtNum(liquidoFactura(f))} € a cobrar). ¿Vincular igualmente?`)) return;
+  f.estado = 'cobrada'; f.fecha_cobro = m.fecha; f.mov_banco = m.id; setIdsMov(m, [...idsMov(m), f.id]);
+  setData('banco', banco); setData('facturas', facturas);
+  renderPendientes(); renderBanco(); toast(`${f.numero} marcada como cobrada`);
+}
+function desvincularMov(movId) {
+  const banco = getData('banco', []), facturas = getData('facturas', []);
+  const m = banco.find(x => x.id === movId); if (!m) return;
+  const fs = idsMov(m).map(id => facturas.find(x => x.id === id)).filter(Boolean);
+  if (fs.length && !confirm(`¿Desvincular ${fs.map(f=>f.numero).join(', ')}? Volverán a quedar pendientes.`)) return;
+  fs.forEach(f => { f.estado = 'pendiente'; delete f.fecha_cobro; delete f.mov_banco; });
+  setIdsMov(m, []);
+  setData('banco', banco); setData('facturas', facturas);
+  renderPendientes(); renderBanco();
+}
+function movAGasto(movId) {
+  const m = getData('banco', []).find(x => x.id === movId); if (!m) return;
+  openGastoModal();
+  const tot = Math.abs(m.importe);
+  document.getElementById('g-fecha').value = m.fecha;
+  document.getElementById('g-proveedor').value = m.concepto;
+  document.getElementById('g-concepto').value = m.concepto;
+  document.getElementById('g-iva-pct').value = '21';
+  document.getElementById('g-base').value = (tot / 1.21).toFixed(2);
+  calcGasto();
+  toast('Revisa base e IVA con la factura del proveedor', 'warn');
+}
+function gastoDeMov(m, gastos) {
+  const tot = Math.abs(m.importe);
+  return gastos.find(g => Math.abs((g.total||0) - tot) < 0.01 && g.fecha && Math.abs(new Date(g.fecha) - new Date(m.fecha)) <= 10*86400000);
+}
+
+function renderBanco() {
+  const tb = document.getElementById('tabla-banco'); if (!tb) return;
+  const banco = getData('banco', []), facturas = getData('facturas', []), gastos = getData('gastos', []);
+  const modelos = getData('modelos', []), retiradas = getData('retiradas', []);
+  const ver = document.getElementById('filtro-banco').value, mes = document.getElementById('filtro-banco-mes').value;
+  const pend = facturas.filter(f => sinMov(f));
+  const registradoComo = m => {
+    const tot = Math.abs(m.importe);
+    const g = gastoDeMov(m, gastos); if (g) return '🏷️ Gasto: ' + (g.concepto || g.proveedor);
+    const md = modelos.find(x => Math.abs((x.importe||0) - tot) < 0.01 && x.fecha === m.fecha); if (md) return `🏛️ Modelo ${md.modelo} ${md.trim}`;
+    const rt = retiradas.find(x => Math.abs((x.importe||0) - tot) < 0.01 && x.fecha === m.fecha); if (rt) return '👤 Retirada personal';
+    return '';
+  };
+  let lista = banco.filter(m => !mes || m.fecha.substring(5,7) === mes);
+  const restoMov = m => {
+    const fs = idsMov(m).map(id => facturas.find(x => x.id === id)).filter(Boolean);
+    if (fs.length && Math.abs(fs.reduce((s,f) => s + (f.total||0), 0) - m.importe) < 0.01) return 0; // pagó el total sin retener
+    return Math.round((m.importe - fs.reduce((s,f) => s + liquidoFactura(f), 0)) * 100) / 100;
+  };
+  if (ver === 'cobros-sin') lista = lista.filter(m => m.importe > 0 && restoMov(m) > 0.01);
+  if (ver === 'cobros-con') lista = lista.filter(m => m.importe > 0 && idsMov(m).length);
+  if (ver === 'pagos-sin') lista = lista.filter(m => m.importe < 0 && !registradoComo(m));
+  if (ver === 'pagos') lista = lista.filter(m => m.importe < 0);
+  lista.sort((a,b) => b.fecha.localeCompare(a.fecha) || (parseInt(b.nro)||0) - (parseInt(a.nro)||0));
+  document.getElementById('banco-contador').textContent = `${lista.length} movimientos · ${banco.length} guardados en total`;
+
+  tb.innerHTML = lista.map(m => {
+    let vinc = '', acc = '';
+    if (m.importe > 0) {
+      const fs = idsMov(m).map(id => facturas.find(x => x.id === id)).filter(Boolean);
+      const resto = restoMov(m);
+      vinc = fs.map(f => `<span class="badge badge-green" style="margin:1px">✓ ${f.numero} · ${f.cliente_nombre}</span>`).join(' ');
+      if (resto > 0.01) {
+        const ord = [...pend].sort((a,b) => Math.abs(liquidoFactura(a) - resto) - Math.abs(liquidoFactura(b) - resto));
+        vinc += `${fs.length ? `<div style="font-size:0.75rem;color:var(--warn);margin:4px 0">Faltan ${fmtNum(resto)} €</div>` : ''}<select id="sel_${m.id}" style="max-width:260px;font-size:0.78rem"><option value="">— Elegir factura —</option>${
+          ord.map(f => `<option value="${f.id}">${cuadraImporte(f, resto)?'★ ':''}${f.numero} · ${f.cliente_nombre} · ${fmtNum(liquidoFactura(f))} €</option>`).join('')}</select>`;
+        acc = `<button class="btn btn-success btn-sm" onclick="vincularMov('${m.id}')">Vincular</button>`;
+      }
+      if (fs.length) acc += ` <button class="btn btn-ghost btn-sm" onclick="desvincularMov('${m.id}')">Desvincular</button>`;
+    } else {
+      const reg = registradoComo(m);
+      vinc = reg ? `<span class="badge badge-blue">${reg}</span>` : '<span style="color:var(--muted);font-size:0.8rem">Sin registrar</span>';
+      acc = reg ? '' : `<button class="btn btn-ghost btn-sm" onclick="movAGasto('${m.id}')">→ Gasto</button>`;
+    }
+    return `<tr>
+      <td style="white-space:nowrap">${fmtFechaES(m.fecha)}</td>
+      <td style="font-size:0.82rem">${m.concepto}</td>
+      <td style="font-weight:600;white-space:nowrap;color:${m.importe>0?'#86efac':'#fca5a5'}">${m.importe>0?'+':''}${fmtNum(m.importe)} €</td>
+      <td>${vinc}</td><td style="white-space:nowrap">${acc}</td></tr>`;
+  }).join('') || `<tr><td colspan="5" style="color:var(--muted);text-align:center;padding:20px">${banco.length ? 'Nada en este filtro' : 'Carga el Excel del banco para empezar'}</td></tr>`;
 }
 
 // ========== EXPORTAR ==========
@@ -1678,6 +1928,7 @@ function backupJSON() {
     gastos: getData('gastos',[]),
     modelos: getData('modelos',[]),
     retiradas: getData('retiradas',[]),
+    banco: getData('banco',[]),
     ultimo_num: getData('ultimo_num', 75),
     exportado: new Date().toISOString()
   };
@@ -1711,9 +1962,11 @@ function importarBackup(e) {
       let nm = 0;
       (d.modelos || []).forEach(m => { if (!mod.find(x => x.id === m.id)) { mod.push(m); nm++; } });
       (d.retiradas || []).forEach(r => { if (!ret.find(x => x.id === r.id)) { ret.push(r); nm++; } });
+      const ban = getData('banco', []);
+      (d.banco || []).forEach(b => { if (!ban.find(x => x.id === b.id)) ban.push(b); });
       if (!confirm(`Se añadirán ${nf} facturas, ${nc} clientes y ${ng} gastos nuevos.\nLo que ya tienes no se toca. ¿Continuar?`)) { e.target.value=''; return; }
       setData('facturas', fac); setData('clientes', cli); setData('gastos', gas);
-      setData('modelos', mod); setData('retiradas', ret);
+      setData('modelos', mod); setData('retiradas', ret); setData('banco', ban);
       const un = Math.max(getData('ultimo_num', 0) || 0, d.ultimo_num || 0);
       setData('ultimo_num', un);
       alert(`✓ Importado: ${nf} facturas, ${nc} clientes, ${ng} gastos`);
