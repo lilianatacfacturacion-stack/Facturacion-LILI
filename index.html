@@ -137,6 +137,7 @@ tr:hover td { background: var(--surface2); }
     <button onclick="showTab('gastos')">🏷️ Gastos</button>
     <button onclick="showTab('clientes')">👥 Clientes</button>
     <button onclick="showTab('conciliacion')">🏦 Conciliación</button>
+    <button onclick="showTab('modelos')">🏛️ Modelos</button>
     <button onclick="showTab('ajustes')" style="background:var(--surface2);border-color:var(--accent);color:var(--accent)">⚙️ Ajustes</button>
   </nav>
 </header>
@@ -320,6 +321,45 @@ tr:hover td { background: var(--surface2); }
   </div>
 </div>
 
+<!-- ===================== MODELOS ===================== -->
+<div id="tab-modelos" class="tab">
+  <div class="card">
+    <div class="card-header">
+      <h2>Modelos trimestrales</h2>
+      <button class="btn btn-primary btn-sm" onclick="openModeloModal()">➕ Añadir modelo</button>
+    </div>
+    <div class="grid3" style="margin-bottom:12px">
+      <div><label>Ejercicio</label><select id="filtro-mod-anyo" onchange="renderModelos()"></select></div>
+      <div><label>Modelo</label>
+        <select id="filtro-mod-tipo" onchange="renderModelos()">
+          <option value="">Todos</option><option>303</option><option>130</option><option>111</option><option>115</option><option>349</option><option>390</option><option>190</option><option>180</option><option>100</option>
+        </select>
+      </div>
+      <div><label>Estado</label>
+        <select id="filtro-mod-estado" onchange="renderModelos()"><option value="">Todos</option><option value="pagado">Pagado</option><option value="pendiente">Pendiente</option></select>
+      </div>
+    </div>
+    <div class="stat-row" id="mod-stats" style="margin-bottom:12px"></div>
+    <table>
+      <thead><tr><th>Modelo</th><th>Periodo</th><th>Resultado</th><th>Importe</th><th>Fecha pago</th><th>Forma</th><th>Estado</th><th>Notas</th><th>Acciones</th></tr></thead>
+      <tbody id="tabla-modelos"></tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <h2>Retiradas a cuenta personal (nóminas propias)</h2>
+      <button class="btn btn-primary btn-sm" onclick="openRetiradaModal()">➕ Añadir retirada</button>
+    </div>
+    <p style="color:var(--muted);font-size:0.8rem;margin-bottom:10px">Solo registro. No cuenta como gasto deducible.</p>
+    <table>
+      <thead><tr><th>Fecha</th><th>Concepto</th><th>Importe</th><th>Acciones</th></tr></thead>
+      <tbody id="tabla-retiradas"></tbody>
+      <tfoot><tr><td colspan="2" style="text-align:right;color:var(--muted)">TOTAL año:</td><td id="ret-total" style="font-weight:600"></td><td></td></tr></tfoot>
+    </table>
+  </div>
+</div>
+
 <!-- ===================== CLIENTES ===================== -->
 <div id="tab-clientes" class="tab">
   <div class="card-header" style="margin-bottom:12px">
@@ -398,6 +438,55 @@ tr:hover td { background: var(--surface2); }
 </main>
 
 <!-- ===================== MODALES ===================== -->
+
+<!-- Modal modelo -->
+<div class="modal-overlay" id="modal-modelo">
+  <div class="modal">
+    <div class="modal-header"><h2 id="mod-titulo">Añadir modelo</h2><button class="btn btn-ghost btn-sm" onclick="closeModal('modal-modelo')">✕</button></div>
+    <input type="hidden" id="m-id">
+    <div class="grid3">
+      <div><label>Modelo</label>
+        <select id="m-modelo"><option>303</option><option>130</option><option>111</option><option>115</option><option>349</option><option>390</option><option>190</option><option>180</option><option>100</option></select>
+      </div>
+      <div><label>Trimestre</label>
+        <select id="m-trim"><option value="1T">1T</option><option value="2T">2T</option><option value="3T">3T</option><option value="4T">4T</option><option value="ANUAL">Anual</option></select>
+      </div>
+      <div><label>Ejercicio</label><input id="m-anyo" type="number" min="2020" max="2099"></div>
+    </div>
+    <div class="grid3">
+      <div><label>Resultado</label>
+        <select id="m-resultado"><option value="ingresar">A ingresar</option><option value="devolver">A devolver</option><option value="compensar">A compensar</option><option value="cero">Sin actividad / cero</option></select>
+      </div>
+      <div><label>Importe (€)</label><input id="m-importe" type="number" step="0.01" min="0"></div>
+      <div><label>Estado</label><select id="m-estado"><option value="pagado">Pagado</option><option value="pendiente">Pendiente</option></select></div>
+    </div>
+    <div class="grid2">
+      <div><label>Fecha pago / presentación</label><input id="m-fecha" type="date"></div>
+      <div><label>Forma</label><select id="m-forma"><option>Domiciliado</option><option>NRC / cargo en cuenta</option><option>Aplazado</option><option>Sin pago</option></select></div>
+    </div>
+    <label>Notas</label><input id="m-notas" type="text" placeholder="Nº justificante, observaciones...">
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px">
+      <button class="btn btn-ghost" onclick="closeModal('modal-modelo')">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarModelo()">💾 Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal retirada -->
+<div class="modal-overlay" id="modal-retirada">
+  <div class="modal">
+    <div class="modal-header"><h2>Retirada a cuenta personal</h2><button class="btn btn-ghost btn-sm" onclick="closeModal('modal-retirada')">✕</button></div>
+    <div class="grid2">
+      <div><label>Fecha</label><input id="r-fecha" type="date"></div>
+      <div><label>Importe (€)</label><input id="r-importe" type="number" step="0.01" min="0"></div>
+    </div>
+    <label>Concepto</label><input id="r-concepto" type="text" value="Nómina propia (retirada)">
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px">
+      <button class="btn btn-ghost" onclick="closeModal('modal-retirada')">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarRetirada()">💾 Guardar</button>
+    </div>
+  </div>
+</div>
 
 <!-- Modal gasto -->
 <div class="modal-overlay" id="modal-gasto">
@@ -509,6 +598,132 @@ function initData() {
   if (!getData('facturas', null)) setData('facturas', []);
   if (!getData('gastos', null)) setData('gastos', []);
   if (!getData('ultimo_num', null)) setData('ultimo_num', 75); // siguiente será 76
+  if (!getData('modelos', null)) setData('modelos', MODELOS_INICIALES);
+  if (!getData('retiradas', null)) setData('retiradas', RETIRADAS_INICIALES);
+}
+
+const MODELOS_INICIALES = [
+  { id:'m_303_4T_2025', modelo:'303', trim:'4T', anyo:2025, resultado:'ingresar', importe:825.30, estado:'pagado', fecha:'2026-01-30', forma:'Domiciliado', notas:'Adeudo AEAT Caja Rural' },
+  { id:'m_303_1T_2026', modelo:'303', trim:'1T', anyo:2026, resultado:'ingresar', importe:806.70, estado:'pagado', fecha:'2026-04-20', forma:'Domiciliado', notas:'Adeudo AEAT Caja Rural' }
+];
+const RETIRADAS_INICIALES = [
+  { id:'r_20260430', fecha:'2026-04-30', concepto:'Nómina propia (traspaso a cuenta personal)', importe:1500 }
+];
+
+// ========== MODELOS TRIMESTRALES ==========
+const ORDEN_TRIM = { '1T':1, '2T':2, '3T':3, '4T':4, 'ANUAL':5 };
+const RES_TXT = { ingresar:'A ingresar', devolver:'A devolver', compensar:'A compensar', cero:'Cero' };
+function fmtFechaES(iso) { if (!iso) return '—'; const [y,m,d] = iso.split('-'); return `${d}/${m}/${y}`; }
+
+function renderModelos() {
+  const todos = getData('modelos', []);
+  const selA = document.getElementById('filtro-mod-anyo');
+  const anyos = [...new Set(todos.map(m => String(m.anyo)).concat(String(new Date().getFullYear())))].sort().reverse();
+  const prev = selA.value;
+  selA.innerHTML = '<option value="">Todos</option>' + anyos.map(a => `<option ${a===prev?'selected':''}>${a}</option>`).join('');
+  const anyo = selA.value, tipo = document.getElementById('filtro-mod-tipo').value, est = document.getElementById('filtro-mod-estado').value;
+  let lista = todos.filter(m => (!anyo || String(m.anyo)===anyo) && (!tipo || m.modelo===tipo) && (!est || m.estado===est));
+  lista.sort((a,b) => (b.anyo-a.anyo) || (ORDEN_TRIM[b.trim]-ORDEN_TRIM[a.trim]) || a.modelo.localeCompare(b.modelo));
+
+  document.getElementById('tabla-modelos').innerHTML = lista.map(m => `<tr>
+    <td><strong>${m.modelo}</strong></td>
+    <td>${m.trim === 'ANUAL' ? 'Anual' : m.trim} ${m.anyo}</td>
+    <td>${RES_TXT[m.resultado] || m.resultado}</td>
+    <td style="font-weight:600">${m.resultado==='devolver' ? '+' : ''}${fmtNum(m.importe||0)} €</td>
+    <td>${fmtFechaES(m.fecha)}</td>
+    <td style="font-size:0.8rem">${m.forma||''}</td>
+    <td><span class="badge ${m.estado==='pagado'?'badge-green':'badge-yellow'}" style="cursor:pointer" title="Clic para cambiar" onclick="toggleModeloEstado('${m.id}')">${m.estado==='pagado'?'✓ Pagado':'⏳ Pendiente'}</span></td>
+    <td style="font-size:0.78rem;color:var(--muted)">${m.notas||''}</td>
+    <td style="white-space:nowrap"><button class="btn btn-ghost btn-sm" onclick="openModeloModal('${m.id}')">✏️</button> <button class="btn btn-ghost btn-sm" onclick="borrarModelo('${m.id}')">🗑️</button></td>
+  </tr>`).join('') || '<tr><td colspan="9" style="color:var(--muted);text-align:center;padding:20px">Sin modelos registrados</td></tr>';
+
+  const pag = lista.filter(m => m.estado==='pagado' && m.resultado==='ingresar').reduce((s,m)=>s+(m.importe||0),0);
+  const pend = lista.filter(m => m.estado==='pendiente' && m.resultado==='ingresar').reduce((s,m)=>s+(m.importe||0),0);
+  const dev = lista.filter(m => m.resultado==='devolver').reduce((s,m)=>s+(m.importe||0),0);
+  document.getElementById('mod-stats').innerHTML = `
+    <div class="stat"><div class="num">${fmtNum(pag)} €</div><div class="lbl">Pagado</div></div>
+    <div class="stat"><div class="num" style="color:var(--warn)">${fmtNum(pend)} €</div><div class="lbl">Pendiente de pago</div></div>
+    <div class="stat"><div class="num">${fmtNum(dev)} €</div><div class="lbl">A devolver</div></div>`;
+
+  // Retiradas
+  const ret = getData('retiradas', []).filter(r => !anyo || (r.fecha||'').startsWith(anyo)).sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||''));
+  document.getElementById('tabla-retiradas').innerHTML = ret.map(r => `<tr>
+    <td>${fmtFechaES(r.fecha)}</td><td>${r.concepto||''}</td><td style="font-weight:600">${fmtNum(r.importe||0)} €</td>
+    <td><button class="btn btn-ghost btn-sm" onclick="borrarRetirada('${r.id}')">🗑️</button></td></tr>`).join('')
+    || '<tr><td colspan="4" style="color:var(--muted);text-align:center;padding:14px">Sin retiradas</td></tr>';
+  document.getElementById('ret-total').textContent = fmtNum(ret.reduce((s,r)=>s+(r.importe||0),0)) + ' €';
+}
+
+function openModeloModal(id) {
+  const m = id ? getData('modelos',[]).find(x => x.id===id) : null;
+  const hoy = new Date();
+  document.getElementById('mod-titulo').textContent = m ? 'Editar modelo' : 'Añadir modelo';
+  document.getElementById('m-id').value = m ? m.id : '';
+  document.getElementById('m-modelo').value = m ? m.modelo : '303';
+  document.getElementById('m-trim').value = m ? m.trim : (['1T','1T','1T','1T','2T','2T','2T','3T','3T','3T','4T','4T'][hoy.getMonth()]);
+  document.getElementById('m-anyo').value = m ? m.anyo : hoy.getFullYear();
+  document.getElementById('m-resultado').value = m ? m.resultado : 'ingresar';
+  document.getElementById('m-importe').value = m ? m.importe : '';
+  document.getElementById('m-estado').value = m ? m.estado : 'pagado';
+  document.getElementById('m-fecha').value = m ? (m.fecha||'') : today();
+  document.getElementById('m-forma').value = m ? (m.forma||'Domiciliado') : 'Domiciliado';
+  document.getElementById('m-notas').value = m ? (m.notas||'') : '';
+  openModal('modal-modelo');
+}
+
+function guardarModelo() {
+  const id = document.getElementById('m-id').value;
+  const m = {
+    modelo: document.getElementById('m-modelo').value,
+    trim: document.getElementById('m-trim').value,
+    anyo: parseInt(document.getElementById('m-anyo').value) || new Date().getFullYear(),
+    resultado: document.getElementById('m-resultado').value,
+    importe: parseFloat(document.getElementById('m-importe').value) || 0,
+    estado: document.getElementById('m-estado').value,
+    fecha: document.getElementById('m-fecha').value,
+    forma: document.getElementById('m-forma').value,
+    notas: document.getElementById('m-notas').value.trim()
+  };
+  const lista = getData('modelos', []);
+  const dup = lista.find(x => x.modelo===m.modelo && x.trim===m.trim && x.anyo===m.anyo && x.id!==id);
+  if (dup && !confirm(`Ya existe el ${m.modelo} ${m.trim} ${m.anyo}. ¿Guardar otro igualmente?`)) return;
+  if (id) { const i = lista.findIndex(x => x.id===id); lista[i] = { ...lista[i], ...m }; }
+  else lista.push({ id: `m_${m.modelo}_${m.trim}_${m.anyo}_${Date.now()}`, ...m });
+  setData('modelos', lista);
+  closeModal('modal-modelo');
+  renderModelos();
+  toast('Modelo guardado');
+}
+
+function toggleModeloEstado(id) {
+  const lista = getData('modelos', []);
+  const m = lista.find(x => x.id===id); if (!m) return;
+  m.estado = m.estado==='pagado' ? 'pendiente' : 'pagado';
+  if (m.estado==='pagado' && !m.fecha) m.fecha = today();
+  setData('modelos', lista); renderModelos();
+  toast(m.estado==='pagado' ? 'Marcado como pagado' : 'Marcado como pendiente');
+}
+
+function borrarModelo(id) {
+  if (!confirm('¿Borrar este modelo?')) return;
+  setData('modelos', getData('modelos',[]).filter(x => x.id!==id)); renderModelos();
+}
+
+function openRetiradaModal() {
+  document.getElementById('r-fecha').value = today();
+  document.getElementById('r-importe').value = '';
+  document.getElementById('r-concepto').value = 'Nómina propia (retirada)';
+  openModal('modal-retirada');
+}
+function guardarRetirada() {
+  const r = { id:'r_'+Date.now(), fecha:document.getElementById('r-fecha').value, concepto:document.getElementById('r-concepto').value.trim(), importe:parseFloat(document.getElementById('r-importe').value)||0 };
+  if (!r.fecha || r.importe<=0) { toast('Fecha e importe obligatorios','warn'); return; }
+  const l = getData('retiradas',[]); l.push(r); setData('retiradas', l);
+  closeModal('modal-retirada'); renderModelos(); toast('Retirada guardada');
+}
+function borrarRetirada(id) {
+  if (!confirm('¿Borrar esta retirada?')) return;
+  setData('retiradas', getData('retiradas',[]).filter(x => x.id!==id)); renderModelos();
 }
 
 // ========== UTILIDADES ==========
@@ -526,7 +741,7 @@ function showTab(name) {
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
   document.getElementById('tab-' + name).classList.add('active');
-  const idx = ['dashboard','facturas','nueva','lotes','gastos','clientes','conciliacion','ajustes'].indexOf(name);
+  const idx = ['dashboard','facturas','nueva','lotes','gastos','clientes','conciliacion','modelos','ajustes'].indexOf(name);
   if (idx >= 0) document.querySelectorAll('nav button')[idx].classList.add('active');
   if (name==='dashboard') renderDashboard();
   if (name==='facturas') renderFacturas();
@@ -536,6 +751,7 @@ function showTab(name) {
   if (name==='conciliacion') renderPendientes();
   if (name==='nueva') initNuevaForm();
   if (name==='ajustes') cargarFormConfig();
+  if (name==='modelos') renderModelos();
 }
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
 function openModal(id) { document.getElementById(id).classList.add('open'); }
@@ -1460,6 +1676,8 @@ function backupJSON() {
     clientes: getData('clientes',[]),
     facturas: getData('facturas',[]),
     gastos: getData('gastos',[]),
+    modelos: getData('modelos',[]),
+    retiradas: getData('retiradas',[]),
     ultimo_num: getData('ultimo_num', 75),
     exportado: new Date().toISOString()
   };
@@ -1489,8 +1707,13 @@ function importarBackup(e) {
       (d.gastos || []).forEach(g => {
         if (!gas.find(x => x.id === g.id)) { gas.push(g); ng++; }
       });
+      const mod = getData('modelos', []), ret = getData('retiradas', []);
+      let nm = 0;
+      (d.modelos || []).forEach(m => { if (!mod.find(x => x.id === m.id)) { mod.push(m); nm++; } });
+      (d.retiradas || []).forEach(r => { if (!ret.find(x => x.id === r.id)) { ret.push(r); nm++; } });
       if (!confirm(`Se añadirán ${nf} facturas, ${nc} clientes y ${ng} gastos nuevos.\nLo que ya tienes no se toca. ¿Continuar?`)) { e.target.value=''; return; }
       setData('facturas', fac); setData('clientes', cli); setData('gastos', gas);
+      setData('modelos', mod); setData('retiradas', ret);
       const un = Math.max(getData('ultimo_num', 0) || 0, d.ultimo_num || 0);
       setData('ultimo_num', un);
       alert(`✓ Importado: ${nf} facturas, ${nc} clientes, ${ng} gastos`);
