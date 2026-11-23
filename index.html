@@ -637,6 +637,9 @@ function initData() {
   if (!getData('ultimo_num', null)) setData('ultimo_num', 75); // siguiente será 76
   if (!getData('modelos', null)) setData('modelos', MODELOS_INICIALES);
   // Añadir/actualizar modelos precargados (sin tocar los que hayas creado tú)
+  // Quitar el 303 4T 2026 que se añadió por error (solo si sigue sin rellenar)
+  { const mods = getData('modelos', []); const k = mods.findIndex(x => x.id === 'm_303_4T_2026' && !x.importe);
+    if (k >= 0) { mods.splice(k, 1); setData('modelos', mods); } }
   if ((getData('modelos_seed', 0) || 0) < 3) {
     const mods = getData('modelos', []);
     MODELOS_INICIALES.forEach(m => { const i = mods.findIndex(x => x.id === m.id); if (i >= 0) mods[i] = { ...mods[i], ...m }; else mods.push(m); });
@@ -660,7 +663,6 @@ const MODELOS_INICIALES = [
   { id:'m_303_2T_2026', modelo:'303', trim:'2T', anyo:2026, resultado:'ingresar', importe:708.21, estado:'pagado', fecha:'2026-07-20', forma:'Domiciliado', notas:'Presentado 11/07/2026 · Just. 3037375026585 · cargo domiciliado (comprobar en banco)' },
   { id:'m_303_3T_2026', modelo:'303', trim:'3T', anyo:2026, resultado:'ingresar', importe:617.49, estado:'pagado', fecha:'2026-10-19', forma:'NRC / cargo en cuenta', notas:'Presentado 19/10/2026 · Just. 3036500433592 · NRC' },
   { id:'m_303_3T_2026_rect', modelo:'303', trim:'3T', anyo:2026, resultado:'devolver', importe:11.97, estado:'pendiente', fecha:'2026-11-09', forma:'Sin pago', notas:'RECTIFICATIVA presentada 09/11/2026 · Just. 3037359329471 · resultado 605,52 − 617,49 ya ingresado' },
-  { id:'m_303_4T_2026', modelo:'303', trim:'4T', anyo:2026, resultado:'ingresar', importe:0, estado:'pendiente', fecha:'', forma:'Domiciliado', notas:'Por presentar · plazo hasta el 30/01/2027 (domiciliado: hasta el 26/01). Pon el importe al presentarlo.' },
   { id:'m_349_3T_2026', modelo:'349', trim:'3T', anyo:2026, resultado:'informativa', importe:0, estado:'pagado', fecha:'2026-10-19', forma:'Sin pago', notas:'Informativa · Op. intracomunitarias 133,07 € · Just. 3497316938491' }
 ];
 const RETIRADAS_INICIALES = [
