@@ -91,14 +91,15 @@ header > button.btn-ghost { margin-left: auto; }
 /* Menú: grande en Inicio, compacto en el resto */
 nav button .ico { margin-right: 6px; }
 body.en-inicio nav { grid-template-columns: repeat(4, 1fr); gap: 16px; margin-top: 14px; }
-body.en-inicio nav button { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 30px 10px; font-size: 1.45rem; font-weight: 600; border-radius: 16px; min-height: 140px; background: #e9e7e3; border-color: #d8d5cf; color: #2b2620; }
-body.en-inicio nav button .ico { font-size: 2.2rem; margin: 0; }
-body.en-inicio nav button.active { background: #e9e7e3; color: #2b2620; border-color: #d8d5cf; }
-body.en-inicio nav button:hover { background: #dfdcd6; border-color: var(--accent); color: var(--accent); transform: translateY(-2px); box-shadow: 0 6px 14px rgba(60,45,20,.10); }
-@media (max-width: 700px) { body.en-inicio nav { grid-template-columns: repeat(2, 1fr); gap: 10px; } body.en-inicio nav button { min-height: 104px; padding: 18px 8px; font-size: 1.2rem; } }
+body.en-inicio nav button { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 28px 6px; font-size: min(2.9rem, 3.4vw); font-weight: 600; letter-spacing: -0.5px; border-radius: 18px; min-height: 170px; background: #d6d3cd; border-color: #c4c0b8; color: #2b2620; }
+body.en-inicio nav button .ico { font-size: 2.6rem; margin: 0; }
+body.en-inicio nav button.active { background: #d6d3cd; color: #2b2620; border-color: #c4c0b8; }
+body.en-inicio nav button:hover { background: #cac6bf; border-color: var(--accent); color: var(--accent); transform: translateY(-2px); box-shadow: 0 6px 14px rgba(60,45,20,.10); }
+@media (max-width: 700px) { body.en-inicio nav { grid-template-columns: repeat(2, 1fr); gap: 10px; } body.en-inicio nav button { min-height: 120px; padding: 16px 4px; font-size: min(2.2rem, 6.6vw); } }
 .dash-mini h3 { font-size: 0.8rem; text-transform: uppercase; letter-spacing: .8px; }
 .dash-mini table td, .dash-mini table th { font-size: 0.78rem; padding: 6px 8px; }
-.dash-mini .card { padding: 12px 14px; }
+.dash-mini .card { padding: 12px 14px; overflow-x: auto; }
+@media (max-width: 700px) { #dash-ultimas th:nth-child(3), #dash-ultimas td:nth-child(3) { display: none; } .dash-mini table td, .dash-mini table th { padding: 6px 5px; } }
 /* Dashboard */
 .ult-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 22px; }
 @media (max-width: 700px) { .ult-grid { grid-template-columns: 1fr; } }
