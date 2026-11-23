@@ -6,38 +6,41 @@
 <title>TAC Facturación — Liliana Sánchez González</title>
 <style>
 :root {
-  --bg: #1a1a1e;
-  --surface: #232328;
-  --surface2: #2c2c33;
-  --border: #3a3a44;
-  --accent: #c9a84c;
-  --accent2: #e8c97a;
-  --warn: #c9a84c;
-  --danger: #ef4444;
-  --text: #f0ede8;
-  --muted: #9e9b94;
-  --radius: 10px;
+  --bg: #f4efe4;        /* crudo */
+  --surface: #fffdf8;
+  --surface2: #efe8da;
+  --border: #e0d6c3;
+  --accent: #8b6a2f;    /* bronce */
+  --accent2: #6b5222;
+  --warn: #a8741a;
+  --danger: #a3402f;
+  --ok: #4f6f3a;
+  --text: #2b2620;
+  --muted: #8a8073;
+  --radius: 12px;
+  --serif: Georgia, 'Times New Roman', serif;
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { background: var(--bg); color: var(--text); font-family: system-ui, sans-serif; font-size: 14px; }
+body { background: var(--bg); color: var(--text); font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; font-size: 14px; }
 h1 { font-size: 1.3rem; }
-h2 { font-size: 1.1rem; color: var(--accent); margin-bottom: 12px; }
+h2 { font-size: 1.15rem; color: var(--text); font-family: var(--serif); font-weight: 600; margin-bottom: 12px; }
 h3 { font-size: 0.95rem; color: var(--muted); margin-bottom: 8px; }
 
 /* Layout */
-header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 12px 20px; display: flex; align-items: center; gap: 16px; }
-header .logo { color: var(--accent); font-weight: 700; font-size: 1.1rem; }
+header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 16px 24px 14px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+header .logo { color: var(--text); font-family: var(--serif); font-weight: 600; font-size: 1.35rem; letter-spacing: .2px; }
 header .subtitle { color: var(--muted); font-size: 0.85rem; }
-nav { display: flex; gap: 4px; margin-left: auto; flex-wrap: wrap; }
-nav button { background: transparent; color: var(--muted); border: 1px solid var(--border); border-radius: 6px; padding: 6px 12px; cursor: pointer; font-size: 0.8rem; transition: all .15s; }
-nav button.active, nav button:hover { background: var(--accent); color: white; border-color: var(--accent); }
+nav { display: grid; grid-template-columns: repeat(auto-fit, minmax(128px, 1fr)); gap: 10px; width: 100%; order: 3; margin-top: 6px; }
+nav button { white-space: nowrap; background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 12px; padding: 14px 8px; cursor: pointer; font-size: 0.98rem; font-weight: 500; transition: all .15s; box-shadow: 0 1px 2px rgba(60,45,20,.06); }
+nav button:hover { border-color: var(--accent); color: var(--accent); }
+nav button.active { background: var(--accent); color: #fffdf8; border-color: var(--accent); }
 
 main { padding: 20px; max-width: 1200px; margin: 0 auto; }
 .tab { display: none; }
 .tab.active { display: block; }
 
 /* Cards */
-.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 16px; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(60,45,20,.05); }
 .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
 
 /* Grid */
@@ -47,21 +50,21 @@ main { padding: 20px; max-width: 1200px; margin: 0 auto; }
 
 /* Forms */
 label { display: block; color: var(--muted); font-size: 0.8rem; margin-bottom: 4px; margin-top: 10px; }
-input, select, textarea { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; color: var(--text); font-size: 0.9rem; }
+input, select, textarea { width: 100%; background: #fff; border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; color: var(--text); font-size: 0.9rem; }
 input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent); }
 textarea { resize: vertical; min-height: 60px; }
 select option { background: var(--surface); }
 
 /* Buttons */
 .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 6px; border: none; cursor: pointer; font-size: 0.85rem; font-weight: 500; transition: all .15s; }
-.btn-primary { background: var(--accent); color: white; }
-.btn-primary:hover { background: #2563eb; }
-.btn-success { background: var(--accent2); color: white; }
-.btn-success:hover { background: #16a34a; }
+.btn-primary { background: var(--accent); color: #fffdf8; }
+.btn-primary:hover { background: var(--accent2); }
+.btn-success { background: var(--ok); color: #fffdf8; }
+.btn-success:hover { background: #3d5a2c; }
 .btn-warn { background: var(--warn); color: white; }
-.btn-warn:hover { background: #d97706; }
+.btn-warn:hover { background: #8a5f12; }
 .btn-danger { background: var(--danger); color: white; }
-.btn-danger:hover { background: #dc2626; }
+.btn-danger:hover { background: #85321f; }
 .btn-ghost { background: transparent; color: var(--muted); border: 1px solid var(--border); }
 .btn-ghost:hover { background: var(--surface2); color: var(--text); }
 .btn-sm { padding: 5px 10px; font-size: 0.78rem; }
@@ -69,20 +72,35 @@ select option { background: var(--surface); }
 /* Table */
 table { width: 100%; border-collapse: collapse; }
 th { text-align: left; color: var(--muted); font-size: 0.78rem; padding: 8px 10px; border-bottom: 1px solid var(--border); font-weight: 500; }
-td { padding: 8px 10px; border-bottom: 1px solid rgba(51,65,85,0.5); font-size: 0.85rem; }
+td { padding: 9px 10px; border-bottom: 1px solid var(--border); font-size: 0.86rem; }
 tr:hover td { background: var(--surface2); }
 .badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 0.72rem; font-weight: 600; }
-.badge-blue { background: rgba(59,130,246,0.2); color: #93c5fd; }
-.badge-green { background: rgba(34,197,94,0.2); color: #86efac; }
-.badge-yellow { background: rgba(245,158,11,0.2); color: #fcd34d; }
-.badge-red { background: rgba(239,68,68,0.2); color: #fca5a5; }
+.badge-blue { background: #e3e9f0; color: #34557a; }
+.badge-green { background: #e5eedc; color: #3f6b2e; }
+.badge-yellow { background: #f5ebd0; color: #8a6414; }
+.badge-red { background: #f5e0db; color: #9a3b2e; }
 
 /* Stats */
 .stat-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
 @media (max-width: 700px) { .stat-row { grid-template-columns: 1fr 1fr; } }
 .stat { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; }
-.stat .num { font-size: 1.5rem; font-weight: 700; color: var(--accent); }
+.stat .num { font-size: 1.5rem; font-weight: 600; color: var(--text); font-family: var(--serif); }
 .stat .lbl { font-size: 0.75rem; color: var(--muted); margin-top: 2px; }
+
+header > button.btn-ghost { margin-left: auto; }
+/* Dashboard */
+.ult-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 22px; }
+@media (max-width: 700px) { .ult-grid { grid-template-columns: 1fr; } }
+.ult-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 18px 20px; box-shadow: 0 2px 6px rgba(60,45,20,.06); }
+.ult-card .ult-num { font-family: var(--serif); font-size: 1.05rem; color: var(--accent); letter-spacing: .3px; }
+.ult-card .ult-cli { font-size: 1.15rem; font-weight: 600; margin: 6px 0 2px; }
+.ult-card .ult-meta { color: var(--muted); font-size: 0.82rem; }
+.ult-card .ult-tot { font-family: var(--serif); font-size: 1.6rem; margin-top: 10px; }
+.resumen-mini { margin-top: 8px; }
+.resumen-mini .stat { padding: 10px 12px; box-shadow: none; }
+.resumen-mini .stat .num { font-size: 1.05rem; }
+.resumen-mini table td, .resumen-mini table th { font-size: 0.78rem; padding: 6px 8px; }
+.seccion-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin: 4px 0 10px; }
 
 /* Line items table */
 .lineas-table { width: 100%; border-collapse: collapse; }
@@ -92,11 +110,11 @@ tr:hover td { background: var(--surface2); }
 .lineas-table input[type=number] { text-align: right; }
 
 /* Toast */
-#toast { position: fixed; bottom: 20px; right: 20px; background: #1e293b; color: white; padding: 10px 18px; border-radius: 8px; border-left: 3px solid var(--accent2); transform: translateY(80px); transition: transform .3s; z-index: 9999; font-size: 0.85rem; max-width: 300px; }
+#toast { position: fixed; bottom: 20px; right: 20px; background: #2b2620; color: white; padding: 10px 18px; border-radius: 8px; border-left: 3px solid var(--accent2); transform: translateY(80px); transition: transform .3s; z-index: 9999; font-size: 0.85rem; max-width: 300px; }
 #toast.show { transform: translateY(0); }
 
 /* Modal */
-.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center; }
+.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(43,38,32,0.45); z-index: 1000; align-items: center; justify-content: center; }
 .modal-overlay.open { display: flex; }
 .modal { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; width: 90%; max-width: 700px; max-height: 90vh; overflow-y: auto; }
 .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
@@ -115,7 +133,7 @@ tr:hover td { background: var(--surface2); }
 #factura-print { display: none; }
 
 /* Lote highlight */
-.lote-row { background: rgba(59,130,246,0.05); }
+.lote-row { background: #f8f3e8; }
 .total-row td { font-weight: 700; border-top: 2px solid var(--accent); color: var(--accent); }
 </style>
 </head>
@@ -130,7 +148,7 @@ tr:hover td { background: var(--surface2); }
     </div>
   </div>
   <nav>
-    <button class="active" onclick="showTab('dashboard')">📊 Dashboard</button>
+    <button class="active" onclick="showTab('dashboard')">🏠 Inicio</button>
     <button onclick="showTab('facturas')">🧾 Facturas</button>
     <button onclick="showTab('nueva')">➕ Nueva</button>
     <button onclick="showTab('lotes')">📦 Lotes</button>
@@ -138,7 +156,7 @@ tr:hover td { background: var(--surface2); }
     <button onclick="showTab('clientes')">👥 Clientes</button>
     <button onclick="showTab('conciliacion')">🏦 Conciliación</button>
     <button onclick="showTab('modelos')">🏛️ Modelos</button>
-    <button onclick="showTab('ajustes')" style="background:var(--surface2);border-color:var(--accent);color:var(--accent)">⚙️ Ajustes</button>
+    <button onclick="showTab('ajustes')">⚙️ Ajustes</button>
   </nav>
 </header>
 
@@ -146,17 +164,17 @@ tr:hover td { background: var(--surface2); }
 
 <!-- ===================== DASHBOARD ===================== -->
 <div id="tab-dashboard" class="tab active">
-  <h2>Resumen del ejercicio 2026</h2>
+  <div class="seccion-label">Últimas facturas emitidas</div>
+  <div class="ult-grid" id="dash-ultimas"></div>
+  <div class="resumen-mini">
+  <div class="seccion-label">Resumen del ejercicio <span id="dash-anyo"></span></div>
   <div class="stat-row" id="stats-row"></div>
   <div class="grid2">
-    <div class="card">
-      <h3>Últimas 5 facturas emitidas</h3>
-      <table id="dash-ultimas"><thead><tr><th>Nº</th><th>Cliente</th><th>Fecha</th><th>Base</th><th>Total</th></tr></thead><tbody></tbody></table>
-    </div>
     <div class="card">
       <h3>Resumen trimestral IVA/IRPF</h3>
       <table id="dash-trimestres"><thead><tr><th>Trimestre</th><th>Base</th><th>IVA 21%</th><th>IRPF 7%</th><th>Neto</th></tr></thead><tbody></tbody></table>
     </div>
+  </div>
   </div>
 </div>
 
@@ -844,11 +862,17 @@ function renderDashboard() {
     <div class="stat"><div class="num">${fmtNum(irpf)} €</div><div class="lbl">IRPF retenido</div></div>
   `;
 
-  // Últimas 5
-  const ultimas = [...fAño].sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||'')).slice(0,5);
-  document.querySelector('#dash-ultimas tbody').innerHTML = ultimas.map(f => `
-    <tr><td>${f.numero}</td><td>${f.cliente_nombre||''}</td><td>${f.fecha||''}</td><td>${fmtNum(f.base||0)} €</td><td>${fmtNum(f.total||0)} €</td></tr>
-  `).join('') || '<tr><td colspan="5" style="color:var(--muted);text-align:center">Sin facturas</td></tr>';
+  // Últimas 2 por número de factura
+  document.getElementById('dash-anyo').textContent = año;
+  const ultimas = [...facturas].sort((a,b) => (b.numero||'').localeCompare(a.numero||'', 'es', {numeric:true})).slice(0,2);
+  document.getElementById('dash-ultimas').innerHTML = ultimas.map(f => `
+    <div class="ult-card">
+      <div class="ult-num">${f.numero}</div>
+      <div class="ult-cli">${f.cliente_nombre||''}</div>
+      <div class="ult-meta">${fmtFechaES(f.fecha)} · Base ${fmtNum(f.base||0)} € ·
+        <span class="badge ${f.estado==='cobrada'?'badge-green':'badge-yellow'}">${f.estado||'pendiente'}</span></div>
+      <div class="ult-tot">${fmtNum(f.total||0)} €</div>
+    </div>`).join('') || '<div class="ult-card" style="color:var(--muted)">Sin facturas</div>';
 
   // Resumen trimestral
   const trimestres = [{t:'1T',m:['01','02','03']},{t:'2T',m:['04','05','06']},{t:'3T',m:['07','08','09']},{t:'4T',m:['10','11','12']}];
@@ -1132,7 +1156,7 @@ function renderFacturas() {
     (f.cliente_nombre||'').toLowerCase().includes(buscar) ||
     (f.cliente_nif||'').toLowerCase().includes(buscar)
   );
-  facturas.sort((a,b) => (b.fecha||'').localeCompare(a.fecha||''));
+  facturas.sort((a,b) => (b.numero||'').localeCompare(a.numero||'', 'es', {numeric:true}));
 
   document.getElementById('tabla-facturas').innerHTML = facturas.map(f => `
     <tr>
@@ -1688,7 +1712,7 @@ async function importarBanco(e) {
     }
     setData('banco', banco);
     const conc = conciliarAuto(false);
-    out.innerHTML = `<div style="padding:10px 12px;border-radius:8px;background:rgba(34,197,94,0.12);color:#86efac">
+    out.innerHTML = `<div style="padding:10px 12px;border-radius:8px;background:#e5eedc;color:#3f6b2e">
       ✓ ${file.name}: <strong>${nuevos}</strong> movimientos nuevos${repetidos ? ` (${repetidos} ya estaban)` : ''}.
       <strong>${conc}</strong> facturas conciliadas automáticamente con el banco.</div>`;
     renderPendientes(); renderBanco();
@@ -1827,7 +1851,7 @@ function renderBanco() {
     return `<tr>
       <td style="white-space:nowrap">${fmtFechaES(m.fecha)}</td>
       <td style="font-size:0.82rem">${m.concepto}</td>
-      <td style="font-weight:600;white-space:nowrap;color:${m.importe>0?'#86efac':'#fca5a5'}">${m.importe>0?'+':''}${fmtNum(m.importe)} €</td>
+      <td style="font-weight:600;white-space:nowrap;color:${m.importe>0?'var(--ok)':'var(--danger)'}">${m.importe>0?'+':''}${fmtNum(m.importe)} €</td>
       <td>${vinc}</td><td style="white-space:nowrap">${acc}</td></tr>`;
   }).join('') || `<tr><td colspan="5" style="color:var(--muted);text-align:center;padding:20px">${banco.length ? 'Nada en este filtro' : 'Carga el Excel del banco para empezar'}</td></tr>`;
 }
@@ -2017,7 +2041,7 @@ function importarBackup(e) {
 
 // Botones backup / restaurar en header
 document.querySelector('header').insertAdjacentHTML('beforeend',
-  '<button class="btn btn-ghost btn-sm" style="margin-left:8px;font-size:0.75rem" onclick="backupJSON()">💾 Backup</button>' +
+  '<button class="btn btn-ghost btn-sm" style="margin-left:auto;font-size:0.8rem" onclick="backupJSON()">💾 Backup</button>' +
   '<label class="btn btn-ghost btn-sm" style="margin-left:6px;font-size:0.75rem;cursor:pointer">📂 Restaurar<input type="file" accept=".json,application/json" style="display:none" onchange="importarBackup(event)"></label>'
 );
 
