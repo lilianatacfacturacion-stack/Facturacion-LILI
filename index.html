@@ -488,7 +488,7 @@ tr:hover td { background: var(--surface2); }
     </div>
     <div class="grid3">
       <div><label>Resultado</label>
-        <select id="m-resultado"><option value="ingresar">A ingresar</option><option value="devolver">A devolver</option><option value="compensar">A compensar</option><option value="cero">Sin actividad / cero</option></select>
+        <select id="m-resultado"><option value="ingresar">A ingresar</option><option value="devolver">A devolver</option><option value="compensar">A compensar</option><option value="cero">Sin actividad / cero</option><option value="informativa">Informativa (sin pago)</option></select>
       </div>
       <div><label>Importe (€)</label><input id="m-importe" type="number" step="0.01" min="0"></div>
       <div><label>Estado</label><select id="m-estado"><option value="pagado">Pagado</option><option value="pendiente">Pendiente</option></select></div>
@@ -632,6 +632,12 @@ function initData() {
   if (!getData('gastos', null)) setData('gastos', []);
   if (!getData('ultimo_num', null)) setData('ultimo_num', 75); // siguiente será 76
   if (!getData('modelos', null)) setData('modelos', MODELOS_INICIALES);
+  // Añadir/actualizar modelos precargados (sin tocar los que hayas creado tú)
+  if ((getData('modelos_seed', 0) || 0) < 2) {
+    const mods = getData('modelos', []);
+    MODELOS_INICIALES.forEach(m => { const i = mods.findIndex(x => x.id === m.id); if (i >= 0) mods[i] = { ...mods[i], ...m }; else mods.push(m); });
+    setData('modelos', mods); setData('modelos_seed', 2);
+  }
   if (!getData('retiradas', null)) setData('retiradas', RETIRADAS_INICIALES);
   normalizarFechas();
 }
@@ -646,7 +652,11 @@ function normalizarFechas() {
 
 const MODELOS_INICIALES = [
   { id:'m_303_4T_2025', modelo:'303', trim:'4T', anyo:2025, resultado:'ingresar', importe:825.30, estado:'pagado', fecha:'2026-01-30', forma:'Domiciliado', notas:'Adeudo AEAT Caja Rural' },
-  { id:'m_303_1T_2026', modelo:'303', trim:'1T', anyo:2026, resultado:'ingresar', importe:806.70, estado:'pagado', fecha:'2026-04-20', forma:'Domiciliado', notas:'Adeudo AEAT Caja Rural' }
+  { id:'m_303_1T_2026', modelo:'303', trim:'1T', anyo:2026, resultado:'ingresar', importe:806.70, estado:'pagado', fecha:'2026-04-20', forma:'Domiciliado', notas:'Presentado 15/04/2026 · Just. 3037373188981 · cargo en banco 20/04' },
+  { id:'m_303_2T_2026', modelo:'303', trim:'2T', anyo:2026, resultado:'ingresar', importe:708.21, estado:'pagado', fecha:'2026-07-20', forma:'Domiciliado', notas:'Presentado 11/07/2026 · Just. 3037375026585 · cargo domiciliado (comprobar en banco)' },
+  { id:'m_303_3T_2026', modelo:'303', trim:'3T', anyo:2026, resultado:'ingresar', importe:617.49, estado:'pagado', fecha:'2026-10-19', forma:'NRC / cargo en cuenta', notas:'Presentado 19/10/2026 · Just. 3036500433592 · NRC' },
+  { id:'m_303_3T_2026_rect', modelo:'303', trim:'3T', anyo:2026, resultado:'devolver', importe:11.97, estado:'pendiente', fecha:'2026-11-09', forma:'Sin pago', notas:'RECTIFICATIVA presentada 09/11/2026 · Just. 3037359329471 · resultado 605,52 − 617,49 ya ingresado' },
+  { id:'m_349_3T_2026', modelo:'349', trim:'3T', anyo:2026, resultado:'informativa', importe:0, estado:'pagado', fecha:'2026-10-19', forma:'Sin pago', notas:'Informativa · Op. intracomunitarias 133,07 € · Just. 3497316938491' }
 ];
 const RETIRADAS_INICIALES = [
   { id:'r_20260430', fecha:'2026-04-30', concepto:'Nómina propia (traspaso a cuenta personal)', importe:1500 }
@@ -654,7 +664,12 @@ const RETIRADAS_INICIALES = [
 
 // ========== MODELOS TRIMESTRALES ==========
 const ORDEN_TRIM = { '1T':1, '2T':2, '3T':3, '4T':4, 'ANUAL':5 };
-const RES_TXT = { ingresar:'A ingresar', devolver:'A devolver', compensar:'A compensar', cero:'Cero' };
+const RES_TXT = { ingresar:'A ingresar', devolver:'A devolver', compensar:'A compensar', cero:'Cero', informativa:'Informativa' };
+function estadoTxt(m) {
+  if (m.resultado === 'informativa' || m.resultado === 'cero') return m.estado==='pagado' ? '✓ Presentado' : '⏳ Sin presentar';
+  if (m.resultado === 'devolver') return m.estado==='pagado' ? '✓ Devuelto' : '⏳ Pendiente devolución';
+  return m.estado==='pagado' ? '✓ Pagado' : '⏳ Pendiente';
+}
 function fmtFechaES(iso) { if (!iso) return '—'; const [y,m,d] = iso.split('-'); return `${d}/${m}/${y}`; }
 
 function renderModelos() {
@@ -674,7 +689,7 @@ function renderModelos() {
     <td style="font-weight:600">${m.resultado==='devolver' ? '+' : ''}${fmtNum(m.importe||0)} €</td>
     <td>${fmtFechaES(m.fecha)}</td>
     <td style="font-size:0.8rem">${m.forma||''}</td>
-    <td><span class="badge ${m.estado==='pagado'?'badge-green':'badge-yellow'}" style="cursor:pointer" title="Clic para cambiar" onclick="toggleModeloEstado('${m.id}')">${m.estado==='pagado'?'✓ Pagado':'⏳ Pendiente'}</span></td>
+    <td><span class="badge ${m.estado==='pagado'?'badge-green':'badge-yellow'}" style="cursor:pointer" title="Clic para cambiar" onclick="toggleModeloEstado('${m.id}')">${estadoTxt(m)}</span></td>
     <td style="font-size:0.78rem;color:var(--muted)">${m.notas||''}</td>
     <td style="white-space:nowrap"><button class="btn btn-ghost btn-sm" onclick="openModeloModal('${m.id}')">✏️</button> <button class="btn btn-ghost btn-sm" onclick="borrarModelo('${m.id}')">🗑️</button></td>
   </tr>`).join('') || '<tr><td colspan="9" style="color:var(--muted);text-align:center;padding:20px">Sin modelos registrados</td></tr>';
@@ -685,7 +700,8 @@ function renderModelos() {
   document.getElementById('mod-stats').innerHTML = `
     <div class="stat"><div class="num">${fmtNum(pag)} €</div><div class="lbl">Pagado</div></div>
     <div class="stat"><div class="num" style="color:var(--warn)">${fmtNum(pend)} €</div><div class="lbl">Pendiente de pago</div></div>
-    <div class="stat"><div class="num">${fmtNum(dev)} €</div><div class="lbl">A devolver</div></div>`;
+    <div class="stat"><div class="num">${fmtNum(dev)} €</div><div class="lbl">A devolver</div></div>
+    <div class="stat"><div class="num">${fmtNum(pag - dev)} €</div><div class="lbl">Coste neto</div></div>`;
 
   // Retiradas
   const ret = getData('retiradas', []).filter(r => !anyo || (r.fecha||'').startsWith(anyo)).sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||''));
