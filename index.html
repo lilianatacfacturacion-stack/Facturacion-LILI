@@ -201,6 +201,10 @@ body.en-inicio nav button:hover { background: #cac6bf; border-color: #a8844d; co
       <button class="btn btn-primary" onclick="showTab('nueva')">➕ Nueva factura</button>
     </div>
   </div>
+  <div id="aviso-huecos" style="display:none;margin-bottom:12px;padding:10px 14px;border-radius:10px;background:#f5ebd0;color:#7a5510;border:1px solid #e6d3a3">
+    ⚠️ Hay saltos en la numeración: <span id="aviso-huecos-txt"></span>
+    <button class="btn btn-warn btn-sm" style="margin-left:8px" onclick="corregirNumeracion()">🔢 Corregir numeración</button>
+  </div>
   <table>
     <thead><tr><th>Nº Factura</th><th>Fecha</th><th>Cliente</th><th>Concepto</th><th>Base</th><th>IVA</th><th>IRPF</th><th>Total</th><th>Estado</th><th>Acciones</th></tr></thead>
     <tbody id="tabla-facturas"></tbody>
@@ -854,9 +858,43 @@ function closeModal(id) { document.getElementById(id).classList.remove('open'); 
 function openModal(id) { document.getElementById(id).classList.add('open'); }
 
 // ========== PRÓXIMO NÚMERO ==========
+// El siguiente número sale de las facturas que EXISTEN (así, si borras las últimas, se reutilizan sus números)
+function numFact(f) { return parseInt(String(f.numero||'').replace(/\D/g,'')) || 0; }
+function ultimoNumero() {
+  const fac = getData('facturas', []);
+  return fac.length ? Math.max(...fac.map(numFact)) : (getData('ultimo_num', 75) || 0);
+}
 function proximoNumero() {
-  const n = getData('ultimo_num', 75) + 1;
+  const n = ultimoNumero() + 1;
   return 'AS' + String(n).padStart(8, '0');
+}
+// Huecos: números que faltan entre la primera y la última factura
+function huecosNumeracion() {
+  const nums = getData('facturas', []).map(numFact).filter(n => n > 0).sort((a,b)=>a-b);
+  if (!nums.length) return [];
+  const set = new Set(nums), h = [];
+  for (let n = nums[0]; n <= nums[nums.length-1]; n++) if (!set.has(n)) h.push(n);
+  return h;
+}
+function corregirNumeracion() {
+  const fac = getData('facturas', []);
+  const huecos = huecosNumeracion();
+  if (!huecos.length) { toast('La numeración es correlativa ✓'); return; }
+  const desde = huecos[0];
+  const mover = fac.filter(f => numFact(f) > desde).sort((a,b) => numFact(a) - numFact(b));
+  const bloqueadas = mover.filter(f => f.estado === 'cobrada' || f.mov_banco);
+  if (bloqueadas.length) {
+    alert('No se puede renumerar automáticamente: hay facturas posteriores al hueco ya cobradas (' + bloqueadas.map(f=>f.numero).join(', ') + ').\nRevísalo a mano.');
+    return;
+  }
+  let n = desde; const cambios = [];
+  mover.forEach(f => { const nuevo = 'AS' + String(n).padStart(8,'0'); if (nuevo !== f.numero) cambios.push([f, nuevo]); n++; });
+  const lista = cambios.map(([f,nv]) => `${f.numero} → ${nv}  (${f.cliente_nombre})`).join('\n');
+  if (!confirm('Faltan los números ' + huecos.map(x=>'AS'+String(x).padStart(8,'0')).join(', ') + '.\n\nSe renumerarán ' + cambios.length + ' facturas pendientes:\n\n' + lista + '\n\nHazlo solo si aún NO las has enviado. ¿Continuar?')) return;
+  cambios.forEach(([f,nv]) => f.numero = nv);
+  setData('facturas', fac);
+  setData('ultimo_num', ultimoNumero());
+  renderFacturas(); toast('Numeración corregida ✓');
 }
 
 // ========== DASHBOARD ==========
@@ -1158,6 +1196,9 @@ function guardarFactura() {
 
 // ========== LISTADO FACTURAS ==========
 function renderFacturas() {
+  const hu = huecosNumeracion(), av = document.getElementById('aviso-huecos');
+  if (av) { av.style.display = hu.length ? 'block' : 'none';
+    document.getElementById('aviso-huecos-txt').textContent = hu.length > 6 ? `faltan ${hu.length} números (del AS${String(hu[0]).padStart(8,'0')} al AS${String(hu[hu.length-1]).padStart(8,'0')})` : 'faltan ' + hu.map(x=>'AS'+String(x).padStart(8,'0')).join(', '); }
   const buscar = (document.getElementById('buscar-factura').value||'').toLowerCase();
   const año = document.getElementById('filtro-año').value;
   let facturas = getData('facturas', []);
@@ -1226,8 +1267,12 @@ function editarFactura(id) {
 }
 
 function eliminarFactura(id) {
-  if (!confirm('¿Eliminar factura?')) return;
-  setData('facturas', getData('facturas',[]).filter(f=>f.id!==id));
+  const fac = getData('facturas',[]); const f = fac.find(x=>x.id===id); if (!f) return;
+  const esUltima = numFact(f) === ultimoNumero();
+  if (!confirm(esUltima ? `¿Eliminar la factura ${f.numero}?` :
+      `¿Eliminar la factura ${f.numero}?\n\nOjo: no es la última, así que quedará un hueco en la numeración. Lo podrás corregir con "🔢 Corregir numeración".`)) return;
+  setData('facturas', fac.filter(x=>x.id!==id));
+  setData('ultimo_num', ultimoNumero());
   renderFacturas();
   toast('Factura eliminada');
 }
@@ -1440,7 +1485,7 @@ function generarLote() {
   const label = periodoLabel(periodo);
   const clientes = getClientesLote();
   const facturas = getData('facturas',[]);
-  let ultimo = getData('ultimo_num', 75);
+  let ultimo = ultimoNumero();
   let generadas = 0;
 
   // Fecha del periodo
