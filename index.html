@@ -1236,7 +1236,7 @@ function eliminarFactura(id) {
 function buildFacturaHTML(f) {
   const E = getEmisor();
   const logo = getLogo();
-  const fechaVenc = f.fecha;
+  const fechaVenc = fmtFechaES(f.fecha);
   const lineasHTML = (f.lineas||[]).map(l => `
     <tr>
       <td>${l.concepto}</td>
@@ -1280,7 +1280,7 @@ function buildFacturaHTML(f) {
     </div>
     <div style="text-align:right;color:#f0ede8">
       <div style="font-size:16px;font-weight:700;color:#e8c97a">${f.numero}</div>
-      <div style="font-size:11px;color:#ccc">Fecha: ${f.fecha}</div>
+      <div style="font-size:11px;color:#ccc">Fecha: ${fmtFechaES(f.fecha)}</div>
     </div>
   </div>
   <div class="row2">
@@ -1305,6 +1305,7 @@ function buildFacturaHTML(f) {
   <table class="totales">
     <tr><td>Base imponible</td><td style="text-align:right">${fmtNum(f.base)} €</td></tr>
     <tr><td>IVA (21,00 %)</td><td style="text-align:right">${fmtNum(f.iva)} €</td></tr>
+    <tr><td><strong>Total factura</strong></td><td style="text-align:right"><strong>${fmtNum((f.base||0)+(f.iva||0))} €</strong></td></tr>
     ${f.irpf ? `<tr><td style="color:#c9a84c">IRPF (7,00 %)</td><td style="text-align:right;color:#c9a84c">-${fmtNum(f.irpf_imp)} €</td></tr>` : ''}
     <tr class="grand"><td>TOTAL A PAGAR</td><td style="text-align:right">${fmtNum(f.total)} €</td></tr>
   </table>
@@ -1313,7 +1314,7 @@ function buildFacturaHTML(f) {
     <tbody><tr><td>${fechaVenc}</td><td>${fmtNum(f.total)} €</td><td>${f.pago||'Transferencia'}</td><td>${f.pago==='Transferencia'?E.iban:''}</td></tr></tbody>
   </table>
   ${f.irpf ? '<p class="irpf-nota">RET.REDUCIDA 7% SEGÚN ART.95.1 REGL.IRPF</p>' : ''}
-  <p class="footer">De conformidad con el Reglamento (UE) 2016/679 (RGPD), los datos personales de esta factura serán tratados por ${E.nombre}, NIF ${E.nif}, con la finalidad de gestionar la relación comercial y las obligaciones fiscales derivadas.</p>
+  <p class="footer">De conformidad con lo dispuesto en el Reglamento (UE) 2016/679 (RGPD) y la Ley Orgánica 3/2018 (LOPDGDD), le informamos de que los datos personales incluidos en esta factura serán tratados por el responsable del tratamiento, Liliana Sánchez González, con NIF 09439041W, con la finalidad de gestionar la relación comercial y las obligaciones fiscales derivadas. Los datos se conservarán durante los plazos legalmente establecidos y no se cederán a terceros salvo obligación legal. Puede ejercer sus derechos de acceso, rectificación, supresión, limitación del tratamiento, portabilidad y oposición dirigiéndose por escrito a Plaza Salamarca 33690 Lugo de Llanera (Asturias) del contacto delegado de protección de datos.</p>
   </body></html>`;
 }
 
@@ -1673,8 +1674,8 @@ function toNum(v) {
   return parseFloat(t);
 }
 // Lo que realmente entra en el banco: total menos la retención de IRPF
-function liquidoFactura(f) { return Math.round(((f.total||0) - (f.irpf ? (f.irpf_imp||0) : 0)) * 100) / 100; }
-function cuadraImporte(f, imp) { return Math.abs(liquidoFactura(f) - imp) < 0.01 || Math.abs((f.total||0) - imp) < 0.01; }
+function liquidoFactura(f) { return Math.round((f.total||0) * 100) / 100; }  // total = a pagar (ya descuenta IRPF)
+function cuadraImporte(f, imp) { return Math.abs(liquidoFactura(f) - imp) < 0.01 || Math.abs((f.total||0) + (f.irpf ? (f.irpf_imp||0) : 0) - imp) < 0.01; }  // o pagó sin retener
 function restarDias(iso, n) { const d = new Date(iso); d.setDate(d.getDate() - n); return d.toISOString().slice(0,10); }
 // Factura aún no enlazada a ningún movimiento (pendiente, o cobrada a mano sin justificar)
 function sinMov(f) { return !f.mov_banco; }
@@ -1831,7 +1832,7 @@ function renderBanco() {
   let lista = banco.filter(m => !mes || m.fecha.substring(5,7) === mes);
   const restoMov = m => {
     const fs = idsMov(m).map(id => facturas.find(x => x.id === id)).filter(Boolean);
-    if (fs.length && Math.abs(fs.reduce((s,f) => s + (f.total||0), 0) - m.importe) < 0.01) return 0; // pagó el total sin retener
+    if (fs.length && Math.abs(fs.reduce((s,f) => s + (f.total||0) + (f.irpf ? (f.irpf_imp||0) : 0), 0) - m.importe) < 0.01) return 0; // pagó sin retener
     return Math.round((m.importe - fs.reduce((s,f) => s + liquidoFactura(f), 0)) * 100) / 100;
   };
   if (ver === 'cobros-sin') lista = lista.filter(m => m.importe > 0 && restoMov(m) > 0.01);
