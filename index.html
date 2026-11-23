@@ -198,6 +198,7 @@ body.en-inicio nav button:hover { background: #cac6bf; border-color: #a8844d; co
       <input type="text" id="buscar-factura" placeholder="Buscar…" style="width:160px" oninput="renderFacturas()">
       <select id="filtro-año" onchange="renderFacturas()"><option value="">Todos</option><option value="2026" selected>2026</option></select>
       <button class="btn btn-ghost btn-sm" onclick="exportarExcelFacturas()">📥 Excel</button>
+      <button class="btn btn-warn btn-sm" onclick="openDomiciliaciones()">🏦 Domiciliaciones</button>
       <button class="btn btn-primary" onclick="showTab('nueva')">➕ Nueva factura</button>
     </div>
   </div>
@@ -206,7 +207,7 @@ body.en-inicio nav button:hover { background: #cac6bf; border-color: #a8844d; co
     <button class="btn btn-warn btn-sm" style="margin-left:8px" onclick="corregirNumeracion()">🔢 Corregir numeración</button>
   </div>
   <table>
-    <thead><tr><th>Nº Factura</th><th>Fecha</th><th>Cliente</th><th>Concepto</th><th>Base</th><th>IVA</th><th>IRPF</th><th>Total</th><th>Estado</th><th>Acciones</th></tr></thead>
+    <thead><tr><th>Nº Factura</th><th>Fecha</th><th>Cliente</th><th>Concepto</th><th>Base</th><th>IVA</th><th>IRPF</th><th>Total</th><th>Cobro</th><th>Estado</th><th>Acciones</th></tr></thead>
     <tbody id="tabla-facturas"></tbody>
   </table>
 </div>
@@ -299,10 +300,18 @@ body.en-inicio nav button:hover { background: #cac6bf; border-color: #a8844d; co
         <select id="lote-periodo"></select>
       </div>
     </div>
+    <div class="grid2" style="margin-top:8px">
+      <div>
+        <label>Fecha de emisión de las facturas</label>
+        <input type="date" id="lote-fecha">
+      </div>
+      <div style="display:flex;align-items:flex-end;color:var(--muted);font-size:0.8rem;padding-bottom:10px">Por defecto, hoy. Cámbiala si quieres otra.</div>
+    </div>
     <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
       <button class="btn btn-primary" onclick="previewLote()">👁️ Previsualizar</button>
       <button class="btn btn-success" onclick="generarLote()">⚡ Generar todas</button>
       <button class="btn btn-ghost" onclick="exportarLoteExcel()">📥 Excel del lote</button>
+      <button class="btn btn-warn" onclick="openDomiciliaciones(document.getElementById('lote-periodo').value)">🏦 Excel domiciliaciones</button>
     </div>
   </div>
   <div id="lote-preview" style="display:none">
@@ -588,6 +597,29 @@ body.en-inicio nav button:hover { background: #cac6bf; border-color: #a8844d; co
   </div>
 </div>
 
+<!-- Modal domiciliaciones -->
+<div class="modal-overlay" id="modal-domic">
+  <div class="modal" style="max-width:820px">
+    <div class="modal-header"><h2>Remesa de domiciliaciones</h2><button class="btn btn-ghost btn-sm" onclick="closeModal('modal-domic')">✕</button></div>
+    <div class="grid3">
+      <div><label>Facturas</label><select id="dom-periodo" onchange="renderDomiciliaciones()"></select></div>
+      <div><label>Fecha de cargo en cuenta</label><input type="date" id="dom-fecha"></div>
+      <div style="display:flex;align-items:flex-end;padding-bottom:10px;font-size:0.8rem;color:var(--muted)">Solo facturas pendientes con cobro por domiciliación.</div>
+    </div>
+    <div style="overflow-x:auto;margin-top:8px">
+    <table>
+      <thead><tr><th><input type="checkbox" id="dom-all" checked onchange="document.querySelectorAll('.dom-chk').forEach(c=>c.checked=this.checked)"></th><th>Factura</th><th>Cliente</th><th>NIF</th><th>IBAN</th><th style="text-align:right">Importe</th></tr></thead>
+      <tbody id="dom-tabla"></tbody>
+    </table>
+    </div>
+    <div id="dom-aviso" style="font-size:0.82rem;color:var(--danger);margin-top:8px"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-domic')">Cancelar</button>
+      <button class="btn btn-primary" onclick="exportarDomiciliaciones()">📥 Descargar Excel</button>
+    </div>
+  </div>
+</div>
+
 <!-- Modal cliente -->
 <div class="modal-overlay" id="modal-cliente">
   <div class="modal">
@@ -604,6 +636,14 @@ body.en-inicio nav button:hover { background: #cac6bf; border-color: #a8844d; co
     <div class="grid2">
       <div><label>Precio base (€)</label><input id="c-precio" type="number" step="0.01"></div>
       <div><label>IRPF 7%</label><select id="c-irpf"><option value="1">Sí</option><option value="0">No</option></select></div>
+    </div>
+    <div class="grid2">
+      <div><label>Forma de cobro</label><select id="c-pago"><option>Transferencia</option><option>Domiciliación</option><option>Efectivo</option></select></div>
+      <div><label>IBAN del cliente (para domiciliar)</label><input id="c-iban" type="text" placeholder="ES00 0000 0000 0000 0000 0000"></div>
+    </div>
+    <div class="grid2">
+      <div><label>Referencia del mandato SEPA</label><input id="c-mandato" type="text" placeholder="Por defecto, su NIF"></div>
+      <div><label>Fecha firma del mandato</label><input id="c-mandato-fecha" type="date"></div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('modal-cliente')">Cancelar</button>
@@ -965,7 +1005,13 @@ function openClienteModal(id=null) {
     document.getElementById('c-precio').value = c.precio||0;
     document.getElementById('c-tipo').value = c.tipo||'trimestral';
     document.getElementById('c-irpf').value = c.irpf?'1':'0';
+    document.getElementById('c-pago').value = normPago(c.pago || pagoHabitual(c.id));
+    document.getElementById('c-iban').value = c.iban_cliente||'';
+    document.getElementById('c-mandato').value = c.mandato_ref||'';
+    document.getElementById('c-mandato-fecha').value = c.mandato_fecha||'';
   } else {
+    ['c-iban','c-mandato','c-mandato-fecha'].forEach(id => document.getElementById(id).value='');
+    document.getElementById('c-pago').value='Transferencia';
     document.getElementById('cliente-modal-title').textContent = 'Nuevo cliente';
     ['c-nif','c-nombre','c-direccion','c-email','c-concepto'].forEach(id => document.getElementById(id).value='');
     document.getElementById('c-precio').value=0;
@@ -976,6 +1022,18 @@ function openClienteModal(id=null) {
 }
 
 function editarCliente(id) { openClienteModal(id); }
+// Forma de cobro de la última factura del cliente (para clientes sin dato)
+function pagoHabitual(cid) {
+  const fs = getData('facturas',[]).filter(f => f.cliente_id === cid).sort((a,b) => numFact(b) - numFact(a));
+  return fs.length ? normPago(fs[0].pago) : 'Transferencia';
+}
+function ibanValido(iban) {
+  const t = iban.replace(/\s+/g,'').toUpperCase();
+  if (!/^[A-Z]{2}\d{2}[A-Z0-9]{10,30}$/.test(t)) return false;
+  const r = (t.slice(4) + t.slice(0,4)).replace(/[A-Z]/g, ch => ch.charCodeAt(0) - 55);
+  let m = 0; for (const d of r) m = (m*10 + +d) % 97;
+  return m === 1;
+}
 
 function guardarCliente() {
   const id = document.getElementById('c-id').value;
@@ -995,14 +1053,19 @@ function guardarCliente() {
     concepto: document.getElementById('c-concepto').value.trim(),
     precio: parseFloat(document.getElementById('c-precio').value)||0,
     tipo: document.getElementById('c-tipo').value,
-    irpf: document.getElementById('c-irpf').value === '1'
+    irpf: document.getElementById('c-irpf').value === '1',
+    pago: document.getElementById('c-pago').value,
+    iban_cliente: document.getElementById('c-iban').value.replace(/\s+/g,'').toUpperCase(),
+    mandato_ref: document.getElementById('c-mandato').value.trim(),
+    mandato_fecha: document.getElementById('c-mandato-fecha').value
   };
+  if (c.iban_cliente && !ibanValido(c.iban_cliente)) { toast('El IBAN no es válido, revísalo', 'warn'); return; }
   if (!c.nif || !c.nombre) { toast('NIF y nombre obligatorios', 'warn'); return; }
 
   const clientes = getData('clientes', []);
   if (id) {
     const idx = clientes.findIndex(x=>x.id===id);
-    if (idx>=0) clientes[idx] = c;
+    if (idx>=0) clientes[idx] = { ...clientes[idx], ...c };
   } else {
     clientes.push(c);
   }
@@ -1195,6 +1258,9 @@ function guardarFactura() {
 }
 
 // ========== LISTADO FACTURAS ==========
+function normPago(p) { p = (p||'').toLowerCase(); return p.startsWith('domic') || p.includes('recibo') ? 'Domiciliación' : p.includes('contado') || p.includes('efectivo') ? 'Efectivo' : 'Transferencia'; }
+function pagoBadge(p) { const n = normPago(p);
+  return n === 'Domiciliación' ? '<span class="badge badge-blue">🏦 Domiciliada</span>' : n === 'Efectivo' ? '<span class="badge badge-yellow">💶 Efectivo</span>' : '<span class="badge badge-green">↗️ Transferencia</span>'; }
 function renderFacturas() {
   const hu = huecosNumeracion(), av = document.getElementById('aviso-huecos');
   if (av) { av.style.display = hu.length ? 'block' : 'none';
@@ -1213,13 +1279,14 @@ function renderFacturas() {
   document.getElementById('tabla-facturas').innerHTML = facturas.map(f => `
     <tr>
       <td><strong>${f.numero}</strong></td>
-      <td>${f.fecha||''}</td>
+      <td style="white-space:nowrap">${fmtFechaES(f.fecha)}</td>
       <td>${f.cliente_nombre||''}</td>
       <td style="font-size:0.78rem;color:var(--muted)">${(f.lineas||[]).map(l=>l.concepto).join(' · ').substring(0,50)}</td>
       <td>${fmtNum(f.base||0)} €</td>
       <td>${fmtNum(f.iva||0)} €</td>
       <td style="color:var(--warn)">${f.irpf ? '-'+fmtNum(f.irpf_imp||0)+' €' : '—'}</td>
       <td style="font-weight:600;color:var(--accent2)">${fmtNum(f.total||0)} €</td>
+      <td>${pagoBadge(f.pago)}</td>
       <td><span class="badge ${f.estado==='cobrada'?'badge-green':'badge-yellow'}" style="cursor:pointer" onclick="toggleEstado('${f.id}')">${f.estado||'pendiente'}</span></td>
       <td style="display:flex;gap:4px;flex-wrap:wrap">
         <button class="btn btn-ghost btn-sm" onclick="editarFactura('${f.id}')">✏️</button>
@@ -1228,7 +1295,7 @@ function renderFacturas() {
         <button class="btn btn-danger btn-sm" onclick="eliminarFactura('${f.id}')">🗑</button>
       </td>
     </tr>
-  `).join('') || '<tr><td colspan="10" style="color:var(--muted);text-align:center;padding:20px">Sin facturas</td></tr>';
+  `).join('') || '<tr><td colspan="11" style="color:var(--muted);text-align:center;padding:20px">Sin facturas</td></tr>';
 }
 
 function toggleEstado(id) {
@@ -1425,6 +1492,7 @@ function renderLotePeriodos() {
 }
 
 document.getElementById('lote-tipo').addEventListener('change', renderLotePeriodos);
+if (!document.getElementById('lote-fecha').value) document.getElementById('lote-fecha').value = today();
 
 function getClientesLote() {
   const tipo = document.getElementById('lote-tipo').value;
@@ -1488,18 +1556,9 @@ function generarLote() {
   let ultimo = ultimoNumero();
   let generadas = 0;
 
-  // Fecha del periodo
-  let fechaFact = today();
-  if (periodo.includes('-T')) {
-    const t = parseInt(periodo.split('-T')[1]);
-    const año = periodo.split('-')[0];
-    const mesInicio = [(t-1)*3+1];
-    fechaFact = `${año}-${String(mesInicio[0]+2).padStart(2,'0')}-30`;
-  } else {
-    const [año, mes] = periodo.split('-');
-    const diasMes = new Date(parseInt(año), parseInt(mes), 0).getDate();
-    fechaFact = `${año}-${mes}-${String(diasMes).padStart(2,'0')}`;
-  }
+  // Fecha: la que elijas en el lote (por defecto, hoy)
+  const fechaFact = document.getElementById('lote-fecha').value || today();
+  if (!confirm(`Se generarán las facturas del lote con fecha de emisión ${fmtFechaES(fechaFact)}. ¿Continuar?`)) return;
 
   clientes.forEach(c => {
     const existe = facturas.find(f => f.cliente_id===c.id && f.periodo===periodo);
@@ -1531,7 +1590,7 @@ function generarLote() {
       irpf: c.irpf,
       irpf_imp: Math.round(irpf_imp*100)/100,
       total: Math.round(total*100)/100,
-      pago: 'Transferencia',
+      pago: normPago(c.pago || pagoHabitual(c.id)),
       iban: getEmisor().iban,
       estado: 'pendiente'
     };
@@ -1934,6 +1993,75 @@ function exportarGastosExcel() {
     csv += `"${g.fecha}","${g.proveedor}","${g.concepto}","${g.cat}","${fmtNum(g.base)}","${g.iva_pct}","${fmtNum(g.iva||0)}","${fmtNum(g.total)}"\n`;
   });
   descargarCSV(csv, 'gastos_lili_2026.csv');
+}
+
+// ========== DOMICILIACIONES ==========
+function openDomiciliaciones(periodo) {
+  const fac = getData('facturas',[]).filter(f => normPago(f.pago) === 'Domiciliación' && f.estado !== 'cobrada');
+  const pers = [...new Set(fac.map(f => f.periodo).filter(Boolean))].sort().reverse();
+  const sel = document.getElementById('dom-periodo');
+  sel.innerHTML = '<option value="">Todas las pendientes</option>' + pers.map(p => `<option value="${p}">Lote ${periodoLabel(p)}</option>`).join('');
+  sel.value = (periodo && pers.includes(periodo)) ? periodo : '';
+  const d = new Date(); d.setDate(d.getDate() + 3);
+  document.getElementById('dom-fecha').value = d.toISOString().slice(0,10);
+  renderDomiciliaciones();
+  openModal('modal-domic');
+}
+// Identificador de acreedor SEPA (España): ES + 2 dígitos control + ZZZ + NIF
+function idAcreedorSEPA(nif) {
+  const n = (nif||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
+  const r = (n + 'ES00').replace(/[A-Z]/g, ch => ch.charCodeAt(0) - 55);
+  let m = 0; for (const d of r) m = (m*10 + +d) % 97;
+  return 'ES' + String(98 - m).padStart(2,'0') + 'ZZZ' + n;
+}
+function domFacturas() {
+  const per = document.getElementById('dom-periodo').value;
+  return getData('facturas',[]).filter(f => normPago(f.pago) === 'Domiciliación' && f.estado !== 'cobrada' && (!per || f.periodo === per))
+    .sort((a,b) => numFact(a) - numFact(b));
+}
+function renderDomiciliaciones() {
+  const cli = getData('clientes',[]);
+  const lista = domFacturas();
+  let sinIban = 0;
+  document.getElementById('dom-tabla').innerHTML = lista.map(f => {
+    const c = cli.find(x => x.id === f.cliente_id) || {};
+    const iban = c.iban_cliente || '';
+    if (!iban) sinIban++;
+    return `<tr><td><input type="checkbox" class="dom-chk" value="${f.id}" ${iban?'checked':''}></td><td>${f.numero}</td><td>${f.cliente_nombre}</td><td>${f.cliente_nif||''}</td>
+      <td style="font-size:0.78rem">${iban ? iban.replace(/(.{4})/g,'$1 ').trim() : '<span style="color:var(--danger)">Falta IBAN</span>'}</td><td style="text-align:right">${fmtNum(f.total)} €</td></tr>`;
+  }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:16px">No hay facturas pendientes domiciliadas</td></tr>';
+  document.getElementById('dom-aviso').textContent = sinIban ? `⚠️ ${sinIban} cliente(s) sin IBAN: añádelo en Clientes → ✏️ para poder domiciliarles.` : '';
+}
+async function exportarDomiciliaciones() {
+  const ids = [...document.querySelectorAll('.dom-chk:checked')].map(c => c.value);
+  if (!ids.length) { toast('No hay facturas seleccionadas', 'warn'); return; }
+  const cli = getData('clientes',[]), fac = getData('facturas',[]), E = getEmisor();
+  const fechaCargo = document.getElementById('dom-fecha').value;
+  const filas = ids.map(id => fac.find(f => f.id === id)).map(f => {
+    const c = cli.find(x => x.id === f.cliente_id) || {};
+    return {
+      'Referencia adeudo': f.numero,
+      'Nombre deudor': f.cliente_nombre,
+      'NIF deudor': f.cliente_nif || c.nif || '',
+      'IBAN deudor': c.iban_cliente || '',
+      'Importe': Math.round((f.total||0)*100)/100,
+      'Concepto': `Factura ${f.numero} - ${(f.lineas||[]).map(l=>l.concepto).join(', ')}`.slice(0,140),
+      'Referencia mandato': c.mandato_ref || c.nif || '',
+      'Fecha firma mandato': c.mandato_fecha ? fmtFechaES(c.mandato_fecha) : '',
+      'Fecha de cargo': fmtFechaES(fechaCargo),
+      'Fecha factura': fmtFechaES(f.fecha)
+    };
+  });
+  try {
+    await cargarSheetJS();
+    const ws = XLSX.utils.json_to_sheet(filas);
+    ws['!cols'] = [14,32,12,28,10,50,18,14,12,12].map(w => ({ wch: w }));
+    const total = filas.reduce((s,r) => s + r['Importe'], 0);
+    XLSX.utils.sheet_add_aoa(ws, [[], ['TOTAL REMESA', '', '', '', Math.round(total*100)/100], ['Nº adeudos', filas.length], ['Acreedor', E.nombre], ['NIF acreedor', E.nif], ['ID acreedor SEPA', idAcreedorSEPA(E.nif)], ['IBAN abono', E.iban]], { origin: -1 });
+    const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Domiciliaciones');
+    XLSX.writeFile(wb, `domiciliaciones_${fechaCargo}.xlsx`);
+    toast(`Excel con ${filas.length} adeudos · ${fmtNum(total)} €`);
+  } catch(e) { toast(e.message, 'warn'); }
 }
 
 function descargarCSV(csv, nombre) {
