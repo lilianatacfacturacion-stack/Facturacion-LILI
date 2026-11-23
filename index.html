@@ -633,6 +633,15 @@ function initData() {
   if (!getData('ultimo_num', null)) setData('ultimo_num', 75); // siguiente será 76
   if (!getData('modelos', null)) setData('modelos', MODELOS_INICIALES);
   if (!getData('retiradas', null)) setData('retiradas', RETIRADAS_INICIALES);
+  normalizarFechas();
+}
+
+// Las facturas históricas venían con fecha dd/mm/aaaa; la app trabaja con aaaa-mm-dd
+function normalizarFechas() {
+  const fac = getData('facturas', []);
+  let cambios = 0;
+  fac.forEach(f => { if (f.fecha && !/^\d{4}-\d{2}-\d{2}$/.test(f.fecha)) { const iso = toISO(f.fecha); if (iso) { f.fecha = iso; cambios++; } } });
+  if (cambios) setData('facturas', fac);
 }
 
 const MODELOS_INICIALES = [
@@ -1967,6 +1976,7 @@ function importarBackup(e) {
       if (!confirm(`Se añadirán ${nf} facturas, ${nc} clientes y ${ng} gastos nuevos.\nLo que ya tienes no se toca. ¿Continuar?`)) { e.target.value=''; return; }
       setData('facturas', fac); setData('clientes', cli); setData('gastos', gas);
       setData('modelos', mod); setData('retiradas', ret); setData('banco', ban);
+      normalizarFechas();
       const un = Math.max(getData('ultimo_num', 0) || 0, d.ultimo_num || 0);
       setData('ultimo_num', un);
       alert(`✓ Importado: ${nf} facturas, ${nc} clientes, ${ng} gastos`);
