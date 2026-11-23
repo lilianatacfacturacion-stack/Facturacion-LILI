@@ -638,8 +638,8 @@ function initData() {
   if (!getData('modelos', null)) setData('modelos', MODELOS_INICIALES);
   // Añadir/actualizar modelos precargados (sin tocar los que hayas creado tú)
   // Quitar el 303 4T 2026 que se añadió por error (solo si sigue sin rellenar)
-  { const mods = getData('modelos', []); const k = mods.findIndex(x => x.id === 'm_303_4T_2026' && !x.importe);
-    if (k >= 0) { mods.splice(k, 1); setData('modelos', mods); } }
+  { const mods = getData('modelos', []).filter(x => !(x.id === 'm_303_4T_2026' && !x.importe) && x.id !== 'm_303_4T_2025');
+    setData('modelos', mods); }
   if ((getData('modelos_seed', 0) || 0) < 3) {
     const mods = getData('modelos', []);
     MODELOS_INICIALES.forEach(m => { const i = mods.findIndex(x => x.id === m.id); if (i >= 0) mods[i] = { ...mods[i], ...m }; else mods.push(m); });
@@ -658,7 +658,6 @@ function normalizarFechas() {
 }
 
 const MODELOS_INICIALES = [
-  { id:'m_303_4T_2025', modelo:'303', trim:'4T', anyo:2025, resultado:'ingresar', importe:825.30, estado:'pagado', fecha:'2026-01-30', forma:'Domiciliado', notas:'Adeudo AEAT Caja Rural' },
   { id:'m_303_1T_2026', modelo:'303', trim:'1T', anyo:2026, resultado:'ingresar', importe:806.70, estado:'pagado', fecha:'2026-04-20', forma:'Domiciliado', notas:'Presentado 15/04/2026 · Just. 3037373188981 · cargo en banco 20/04' },
   { id:'m_303_2T_2026', modelo:'303', trim:'2T', anyo:2026, resultado:'ingresar', importe:708.21, estado:'pagado', fecha:'2026-07-20', forma:'Domiciliado', notas:'Presentado 11/07/2026 · Just. 3037375026585 · cargo domiciliado (comprobar en banco)' },
   { id:'m_303_3T_2026', modelo:'303', trim:'3T', anyo:2026, resultado:'ingresar', importe:617.49, estado:'pagado', fecha:'2026-10-19', forma:'NRC / cargo en cuenta', notas:'Presentado 19/10/2026 · Just. 3036500433592 · NRC' },
