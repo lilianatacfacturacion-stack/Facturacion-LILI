@@ -1139,7 +1139,8 @@ function guardarFactura() {
   const facturas = getData('facturas', []);
   if (editFacturaId) {
     const idx = facturas.findIndex(f=>f.id===editFacturaId);
-    if (idx>=0) facturas[idx] = factura;
+    // Al editar se conserva lo que no está en el formulario: periodo del lote, estado de cobro, vínculo con el banco
+    if (idx>=0) { const ant = facturas[idx]; facturas[idx] = { ...ant, ...factura, estado: ant.estado || 'pendiente' }; }
   } else {
     facturas.push(factura);
     // Incrementar contador solo si es número nuevo
