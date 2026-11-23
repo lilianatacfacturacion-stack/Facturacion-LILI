@@ -1275,7 +1275,6 @@ function buildFacturaHTML(f) {
       ${logoHTML}
       <div>
         <div style="font-size:14px;font-weight:700;color:#e8c97a">FACTURA ORDINARIA</div>
-        <span class="badge">VERI*FACTU</span>
       </div>
     </div>
     <div style="text-align:right;color:#f0ede8">
@@ -1675,7 +1674,12 @@ function toNum(v) {
 }
 // Lo que realmente entra en el banco: total menos la retención de IRPF
 function liquidoFactura(f) { return Math.round((f.total||0) * 100) / 100; }  // total = a pagar (ya descuenta IRPF)
-function cuadraImporte(f, imp) { return Math.abs(liquidoFactura(f) - imp) < 0.01 || Math.abs((f.total||0) + (f.irpf ? (f.irpf_imp||0) : 0) - imp) < 0.01; }  // o pagó sin retener
+function cuadraImporte(f, imp) {
+  const t = f.total||0, r = f.irpf ? (f.irpf_imp||0) : 0;
+  return Math.abs(t - imp) < 0.01        // total a pagar
+      || Math.abs(t + r - imp) < 0.01    // pagó sin retener
+      || Math.abs(t - r - imp) < 0.01;   // facturas antiguas guardadas con el total sin restar IRPF
+}
 function restarDias(iso, n) { const d = new Date(iso); d.setDate(d.getDate() - n); return d.toISOString().slice(0,10); }
 // Factura aún no enlazada a ningún movimiento (pendiente, o cobrada a mano sin justificar)
 function sinMov(f) { return !f.mov_banco; }
