@@ -328,6 +328,9 @@ tr:hover td { background: var(--surface2); }
       <h2>Modelos trimestrales</h2>
       <button class="btn btn-primary btn-sm" onclick="openModeloModal()">➕ Añadir modelo</button>
     </div>
+    <div style="font-size:0.8rem;color:var(--muted);background:var(--surface2,rgba(255,255,255,0.04));border:1px solid var(--border);border-radius:8px;padding:8px 12px;margin-bottom:10px">
+      📋 Según tu 036 (alta 01/07/2025): <strong>IVA régimen general</strong> → 303 trimestral · <strong>IRPF estimación directa simplificada</strong> sin obligación de pagos fraccionados (no presentas 130) · sin retenciones a trabajadores (no presentas 111) · 349 solo los trimestres con operaciones intracomunitarias.
+    </div>
     <div class="grid3" style="margin-bottom:12px">
       <div><label>Ejercicio</label><select id="filtro-mod-anyo" onchange="renderModelos()"></select></div>
       <div><label>Modelo</label>
@@ -558,7 +561,7 @@ tr:hover td { background: var(--surface2); }
     <input type="hidden" id="c-id">
     <div class="grid2">
       <div><label>NIF / CIF</label><input id="c-nif" type="text" placeholder="12345678A"></div>
-      <div><label>Tipo</label><select id="c-tipo"><option value="trimestral">Trimestral</option><option value="mensual">Mensual</option></select></div>
+      <div><label>Tipo</label><select id="c-tipo"><option value="trimestral">Trimestral</option><option value="mensual">Mensual</option><option value="puntual">Puntual (sin lote)</option></select></div>
     </div>
     <label>Nombre / Razón social</label><input id="c-nombre" type="text">
     <label>Dirección</label><input id="c-direccion" type="text">
@@ -605,7 +608,7 @@ function getLogo() {
 }
 
 const CLIENTES_INICIALES = [
-  { id:'c01', nif:'05321871Q', nombre:'Julia Fernández Cortina',       direccion:'Lugar Piñera, 13',                    cp:'33420 SAN CUCAO LLANERA',   email:'fcortina.julia@gmail.com', precio:25,   tipo:'mensual',     irpf:false, concepto:'MODELO SUELTO' },
+  { id:'c01', nif:'05321871Q', nombre:'Julia Fernández Cortina',       direccion:'Lugar Piñera, 13',                    cp:'33420 SAN CUCAO LLANERA',   email:'fcortina.julia@gmail.com', precio:25,   tipo:'puntual',     irpf:false, concepto:'MODELO SUELTO' },
   { id:'c02', nif:'76943551H', nombre:'Miguel Martínez Istillarte',    direccion:'Las Carcuas S/N',                     cp:'33780 TREVIAS - VALDÉS',    email:'',                         precio:108,  tipo:'trimestral',  irpf:true,  concepto:'Asesoría Trimestral AUTÓNOMO' },
   { id:'c03', nif:'09421442K', nombre:'María José Martínez Díaz',      direccion:'Lugar Nora, 42',                      cp:'33194 VILLAPEREZ',          email:'',                         precio:108,  tipo:'trimestral',  irpf:true,  concepto:'Asesoría Trimestral AUTÓNOMO' },
   { id:'c04', nif:'B87439204', nombre:'Verde Decoración Vegetal S.L.', direccion:'C/Echegaray 4',                       cp:'28014 Madrid',              email:'',                         precio:165,  tipo:'mensual',     irpf:true,  concepto:'Contabilidad mensual | Nóminas' },
@@ -613,12 +616,13 @@ const CLIENTES_INICIALES = [
   { id:'c06', nif:'09440446G', nombre:'Laura Díaz Díaz',               direccion:'Calle Valire 9',                      cp:'33519 SIERO',               email:'',                         precio:108,  tipo:'trimestral',  irpf:true,  concepto:'Asesoría Trimestral AUTÓNOMO' },
   { id:'c07', nif:'Y9980223P', nombre:'María Paz Ibáñez Asocas',       direccion:'Calle de las Minas 14, 4A',           cp:'28004 Madrid',              email:'',                         precio:108,  tipo:'trimestral',  irpf:true,  concepto:'Asesoría Trimestral AUTÓNOMO' },
   { id:'c08', nif:'10894692Y', nombre:'Noelia Antolín Llorente',       direccion:'C/CANDÁS 11, 2ºB',                   cp:'33207 GIJON',               email:'',                         precio:108,  tipo:'trimestral',  irpf:true,  concepto:'Asesoría Trimestral AUTÓNOMO' },
-  { id:'c09', nif:'B16354813', nombre:'Gijón Hogares S.L.',            direccion:'C/Dr. Aquilino Horlé 22 Bajo Of. 5', cp:'33203 Gijón',               email:'',                         precio:150,  tipo:'mensual',     irpf:true,  concepto:'Contabilidad mensual' },
+  { id:'c09', nif:'B16354813', nombre:'Gijón Hogares S.L.',            direccion:'C/Dr. Aquilino Horlé 22 Bajo Of. 5', cp:'33203 Gijón',               email:'',                         precio:150,  tipo:'puntual',     irpf:true,  concepto:'Contabilidad mensual' },
   { id:'c10', nif:'71647050A', nombre:'Verónica Arbesu Nuño',          direccion:'CL LES PEÑES 1 BJ',                  cp:'33199 Granda - Siero',      email:'',                         precio:330,  tipo:'mensual',     irpf:true,  concepto:'Contabilidad mensual | Nóminas | Modelos fiscales' },
   { id:'c11', nif:'71666500H', nombre:'Roberto Recio González',        direccion:'Calle Lago Enol Nº11, Piso 3',       cp:'33690 Lugo de Llanera',     email:'',                         precio:228,  tipo:'mensual',     irpf:true,  concepto:'Contabilidad mensual | Nóminas' },
   { id:'c12', nif:'09418301P', nombre:'David Fuertes Cabeza',          direccion:'CALLE JOSE MANUEL BOBES 11',         cp:'33690 Lugo de Llanera',     email:'',                         precio:210,  tipo:'trimestral',  irpf:true,  concepto:'Asesoría Trimestral AUTÓNOMO' },
   { id:'c13', nif:'45837826E', nombre:'Carolina Catalán De Las Nieves', direccion:'Av. José Martínez González, 58',    cp:'03600 ELDA (ALICANTE)',     email:'',                         precio:108,  tipo:'trimestral',  irpf:true,  concepto:'Asesoría Trimestral AUTÓNOMO' },
   { id:'c14', nif:'11074285S', nombre:'Mª Cristina Vega Morán',        direccion:'Avenida Pando, nº28',                cp:'33690 Lugo de Llanera',     email:'',                         precio:120,  tipo:'trimestral',  irpf:false, concepto:'Asesoría Trimestral AUTÓNOMO (facturas)' },
+  { id:'c16', nif:'P3303500G', nombre:'Ayuntamiento de Llanera',       direccion:'Avenida Prudencio González, Nº1',     cp:'33424 POSADA DE LLANERA',   email:'',                         precio:95,   tipo:'mensual',     irpf:true,  concepto:'Asesoramiento fiscal para asociaciones' },
   { id:'c15', nif:'10904950Y', nombre:'Beatriz Pérez Fernández',       direccion:'Calle Concejo del Franco 3, 5º D',   cp:'33204 GIJON',               email:'',                         precio:108,  tipo:'trimestral',  irpf:true,  concepto:'Asesoría Trimestral AUTÓNOMO' },
 ];
 
@@ -633,10 +637,10 @@ function initData() {
   if (!getData('ultimo_num', null)) setData('ultimo_num', 75); // siguiente será 76
   if (!getData('modelos', null)) setData('modelos', MODELOS_INICIALES);
   // Añadir/actualizar modelos precargados (sin tocar los que hayas creado tú)
-  if ((getData('modelos_seed', 0) || 0) < 2) {
+  if ((getData('modelos_seed', 0) || 0) < 3) {
     const mods = getData('modelos', []);
     MODELOS_INICIALES.forEach(m => { const i = mods.findIndex(x => x.id === m.id); if (i >= 0) mods[i] = { ...mods[i], ...m }; else mods.push(m); });
-    setData('modelos', mods); setData('modelos_seed', 2);
+    setData('modelos', mods); setData('modelos_seed', 3);
   }
   if (!getData('retiradas', null)) setData('retiradas', RETIRADAS_INICIALES);
   normalizarFechas();
@@ -656,6 +660,7 @@ const MODELOS_INICIALES = [
   { id:'m_303_2T_2026', modelo:'303', trim:'2T', anyo:2026, resultado:'ingresar', importe:708.21, estado:'pagado', fecha:'2026-07-20', forma:'Domiciliado', notas:'Presentado 11/07/2026 · Just. 3037375026585 · cargo domiciliado (comprobar en banco)' },
   { id:'m_303_3T_2026', modelo:'303', trim:'3T', anyo:2026, resultado:'ingresar', importe:617.49, estado:'pagado', fecha:'2026-10-19', forma:'NRC / cargo en cuenta', notas:'Presentado 19/10/2026 · Just. 3036500433592 · NRC' },
   { id:'m_303_3T_2026_rect', modelo:'303', trim:'3T', anyo:2026, resultado:'devolver', importe:11.97, estado:'pendiente', fecha:'2026-11-09', forma:'Sin pago', notas:'RECTIFICATIVA presentada 09/11/2026 · Just. 3037359329471 · resultado 605,52 − 617,49 ya ingresado' },
+  { id:'m_303_4T_2026', modelo:'303', trim:'4T', anyo:2026, resultado:'ingresar', importe:0, estado:'pendiente', fecha:'', forma:'Domiciliado', notas:'Por presentar · plazo hasta el 30/01/2027 (domiciliado: hasta el 26/01). Pon el importe al presentarlo.' },
   { id:'m_349_3T_2026', modelo:'349', trim:'3T', anyo:2026, resultado:'informativa', importe:0, estado:'pagado', fecha:'2026-10-19', forma:'Sin pago', notas:'Informativa · Op. intracomunitarias 133,07 € · Just. 3497316938491' }
 ];
 const RETIRADAS_INICIALES = [
@@ -866,7 +871,7 @@ function renderClientes() {
       <td style="font-size:0.78rem;color:var(--muted)">${c.direccion}, ${c.cp||''}</td>
       <td>${c.email ? `<a href="mailto:${c.email}" style="color:var(--accent)">${c.email}</a>` : '<span style="color:var(--muted)">—</span>'}</td>
       <td>${fmtNum(c.precio||0)} €</td>
-      <td><span class="badge ${c.tipo==='mensual'?'badge-green':'badge-blue'}">${c.tipo}</span></td>
+      <td><span class="badge ${c.tipo==='mensual'?'badge-green':c.tipo==='puntual'?'badge-yellow':'badge-blue'}">${c.tipo}</span></td>
       <td><span class="badge ${c.irpf?'badge-yellow':'badge-red'}">${c.irpf?'Sí':'No'}</span></td>
       <td><button class="btn btn-ghost btn-sm" onclick="editarCliente('${c.id}')">✏️</button> <button class="btn btn-danger btn-sm" onclick="eliminarCliente('${c.id}')">🗑</button></td>
     </tr>
@@ -1974,11 +1979,18 @@ function importarBackup(e) {
       const d = JSON.parse(ev.target.result);
       const fac = getData('facturas', []), cli = getData('clientes', []), gas = getData('gastos', []);
       let nf = 0, nc = 0, ng = 0;
+      let na = 0;
       (d.facturas || []).forEach(f => {
-        if (!fac.find(x => x.id === f.id || (x.numero && x.numero === f.numero))) { fac.push(f); nf++; }
+        const i = fac.findIndex(x => x.id === f.id || (x.numero && x.numero === f.numero));
+        if (i < 0) { fac.push(f); nf++; return; }
+        // Misma factura: se corrigen los datos pero se conserva el cobro que ya tenías
+        const ant = fac[i];
+        fac[i] = { ...f, id: ant.id, estado: ant.estado || f.estado, fecha_cobro: ant.fecha_cobro, mov_banco: ant.mov_banco };
+        if (JSON.stringify({...ant, estado:0, fecha_cobro:0, mov_banco:0}) !== JSON.stringify({...fac[i], estado:0, fecha_cobro:0, mov_banco:0})) na++;
       });
       (d.clientes || []).forEach(c => {
-        if (!cli.find(x => x.id === c.id)) { cli.push(c); nc++; }
+        const i = cli.findIndex(x => x.id === c.id);
+        if (i < 0) { cli.push(c); nc++; } else cli[i] = { ...cli[i], ...c };
       });
       (d.gastos || []).forEach(g => {
         if (!gas.find(x => x.id === g.id)) { gas.push(g); ng++; }
@@ -1989,13 +2001,13 @@ function importarBackup(e) {
       (d.retiradas || []).forEach(r => { if (!ret.find(x => x.id === r.id)) { ret.push(r); nm++; } });
       const ban = getData('banco', []);
       (d.banco || []).forEach(b => { if (!ban.find(x => x.id === b.id)) ban.push(b); });
-      if (!confirm(`Se añadirán ${nf} facturas, ${nc} clientes y ${ng} gastos nuevos.\nLo que ya tienes no se toca. ¿Continuar?`)) { e.target.value=''; return; }
+      if (!confirm(`Se añadirán ${nf} facturas, ${nc} clientes y ${ng} gastos nuevos.\nSe corregirán ${na} facturas que ya tenías (se mantiene si están cobradas).\n¿Continuar?`)) { e.target.value=''; return; }
       setData('facturas', fac); setData('clientes', cli); setData('gastos', gas);
       setData('modelos', mod); setData('retiradas', ret); setData('banco', ban);
       normalizarFechas();
       const un = Math.max(getData('ultimo_num', 0) || 0, d.ultimo_num || 0);
       setData('ultimo_num', un);
-      alert(`✓ Importado: ${nf} facturas, ${nc} clientes, ${ng} gastos`);
+      alert(`✓ Importado: ${nf} facturas nuevas, ${na} corregidas, ${nc} clientes, ${ng} gastos`);
       location.reload();
     } catch(err) { alert('El archivo no es un backup válido'); }
   };
