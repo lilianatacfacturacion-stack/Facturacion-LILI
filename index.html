@@ -88,6 +88,17 @@ tr:hover td { background: var(--surface2); }
 .stat .lbl { font-size: 0.75rem; color: var(--muted); margin-top: 2px; }
 
 header > button.btn-ghost { margin-left: auto; }
+/* Menú: grande en Inicio, compacto en el resto */
+nav button .ico { margin-right: 6px; }
+body.en-inicio nav { grid-template-columns: repeat(4, 1fr); gap: 16px; margin-top: 14px; }
+body.en-inicio nav button { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 30px 10px; font-size: 1.1rem; border-radius: 16px; min-height: 130px; }
+body.en-inicio nav button .ico { font-size: 2.2rem; margin: 0; }
+body.en-inicio nav button.active { background: var(--surface); color: var(--text); border-color: var(--border); }
+body.en-inicio nav button:hover { border-color: var(--accent); color: var(--accent); transform: translateY(-2px); box-shadow: 0 6px 14px rgba(60,45,20,.10); }
+@media (max-width: 700px) { body.en-inicio nav { grid-template-columns: repeat(2, 1fr); gap: 10px; } body.en-inicio nav button { min-height: 96px; padding: 18px 8px; font-size: 1rem; } }
+.dash-mini h3 { font-size: 0.8rem; text-transform: uppercase; letter-spacing: .8px; }
+.dash-mini table td, .dash-mini table th { font-size: 0.78rem; padding: 6px 8px; }
+.dash-mini .card { padding: 12px 14px; }
 /* Dashboard */
 .ult-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 22px; }
 @media (max-width: 700px) { .ult-grid { grid-template-columns: 1fr; } }
@@ -139,7 +150,7 @@ header > button.btn-ghost { margin-left: auto; }
 .total-row td { font-weight: 700; border-top: 2px solid var(--accent); color: var(--accent); }
 </style>
 </head>
-<body>
+<body class="en-inicio">
 
 <header>
   <div style="display:flex;align-items:center;gap:14px">
@@ -150,14 +161,14 @@ header > button.btn-ghost { margin-left: auto; }
     </div>
   </div>
   <nav>
-    <button class="active" onclick="showTab('dashboard')">🏠 Inicio</button>
-    <button onclick="showTab('facturas')">🧾 Facturas</button>
-    <button onclick="showTab('lotes')">📦 Lotes</button>
-    <button onclick="showTab('gastos')">🏷️ Gastos</button>
-    <button onclick="showTab('clientes')">👥 Clientes</button>
-    <button onclick="showTab('conciliacion')">🏦 Conciliación</button>
-    <button onclick="showTab('modelos')">🏛️ Modelos</button>
-    <button onclick="showTab('ajustes')">⚙️ Ajustes</button>
+    <button class="active" onclick="showTab('dashboard')"><span class="ico">🏠</span><span class="txt">Inicio</span></button>
+    <button onclick="showTab('facturas')"><span class="ico">🧾</span><span class="txt">Facturas</span></button>
+    <button onclick="showTab('lotes')"><span class="ico">📦</span><span class="txt">Lotes</span></button>
+    <button onclick="showTab('gastos')"><span class="ico">🏷️</span><span class="txt">Gastos</span></button>
+    <button onclick="showTab('clientes')"><span class="ico">👥</span><span class="txt">Clientes</span></button>
+    <button onclick="showTab('conciliacion')"><span class="ico">🏦</span><span class="txt">Conciliación</span></button>
+    <button onclick="showTab('modelos')"><span class="ico">🏛️</span><span class="txt">Modelos</span></button>
+    <button onclick="showTab('ajustes')"><span class="ico">⚙️</span><span class="txt">Ajustes</span></button>
   </nav>
 </header>
 
@@ -165,14 +176,14 @@ header > button.btn-ghost { margin-left: auto; }
 
 <!-- ===================== DASHBOARD ===================== -->
 <div id="tab-dashboard" class="tab active">
-  <div class="grid2 dash-grid">
+  <div class="grid2 dash-grid dash-mini">
     <div class="card">
-      <div class="card-header" style="margin-bottom:6px"><h3 style="margin:0">Últimas facturas</h3>
+      <div class="card-header" style="margin-bottom:6px"><h3 style="margin:0">Últimas 3 facturas</h3>
         <button class="btn btn-ghost btn-sm" onclick="showTab('facturas')">Ver todas →</button></div>
       <table id="dash-ultimas"><thead><tr><th>Nº</th><th>Cliente</th><th>Fecha</th><th style="text-align:right">Total</th><th></th></tr></thead><tbody></tbody></table>
     </div>
     <div class="card">
-      <div class="card-header" style="margin-bottom:6px"><h3 style="margin:0">Resumen trimestral <span id="dash-anyo"></span></h3></div>
+      <div class="card-header" style="margin-bottom:6px"><h3 style="margin:0">Últimos 3 trimestres <span id="dash-anyo"></span></h3></div>
       <table id="dash-trimestres"><thead><tr><th>Trim.</th><th>Base</th><th>IVA</th><th>IRPF</th><th style="text-align:right">Neto</th></tr></thead><tbody></tbody></table>
     </div>
   </div>
@@ -827,6 +838,7 @@ function showTab(name) {
   const idx = ['dashboard','facturas','lotes','gastos','clientes','conciliacion','modelos','ajustes'].indexOf(name);
   const idx2 = idx >= 0 ? idx : (name === 'nueva' ? 1 : -1);
   if (idx2 >= 0) document.querySelectorAll('nav button')[idx2].classList.add('active');
+  document.body.classList.toggle('en-inicio', name==='dashboard');
   if (name==='dashboard') renderDashboard();
   if (name==='facturas') renderFacturas();
   if (name==='clientes') renderClientes();
@@ -861,7 +873,7 @@ function renderDashboard() {
 
   // Últimas 6 por número de factura
   document.getElementById('dash-anyo').textContent = año;
-  const ultimas = [...facturas].sort((a,b) => (b.numero||'').localeCompare(a.numero||'', 'es', {numeric:true})).slice(0,6);
+  const ultimas = [...facturas].sort((a,b) => (b.numero||'').localeCompare(a.numero||'', 'es', {numeric:true})).slice(0,3);
   document.querySelector('#dash-ultimas tbody').innerHTML = ultimas.map(f => `
     <tr><td style="white-space:nowrap">${(f.numero||'').replace(/^AS0+/,'AS ')}</td><td>${f.cliente_nombre||''}</td>
     <td style="white-space:nowrap;color:var(--muted)">${fmtFechaES(f.fecha)}</td>
@@ -871,14 +883,16 @@ function renderDashboard() {
 
   // Resumen trimestral
   const trimestres = [{t:'1T',m:['01','02','03']},{t:'2T',m:['04','05','06']},{t:'3T',m:['07','08','09']},{t:'4T',m:['10','11','12']}];
-  document.querySelector('#dash-trimestres tbody').innerHTML = trimestres.map(({t,m}) => {
+  const trimActual = Math.floor(new Date().getMonth() / 3);           // 0..3
+  const cerrados = trimestres.slice(0, trimActual).slice(-3).reverse(); // últimos 3 terminados
+  document.querySelector('#dash-trimestres tbody').innerHTML = (cerrados.length ? cerrados : trimestres.slice(0,1)).map(({t,m}) => {
     const tf = fAño.filter(f => f.fecha && m.includes(f.fecha.substring(5,7)));
     const tb = tf.reduce((s,f)=>s+(f.base||0),0);
     const ti = tf.reduce((s,f)=>s+(f.iva||0),0);
     const tp = tf.reduce((s,f)=>s+(f.irpf_imp||0),0);
     const tn = tb + ti - tp;
     return `<tr><td><span class="badge badge-blue">${t}</span></td><td>${fmtNum(tb)} €</td><td>${fmtNum(ti)} €</td><td style="color:var(--warn)">${fmtNum(tp)} €</td><td style="text-align:right">${fmtNum(tn)} €</td></tr>`;
-  }).join('') + `<tr style="font-weight:600"><td>Total</td><td>${fmtNum(base)} €</td><td>${fmtNum(iva)} €</td><td style="color:var(--warn)">${fmtNum(irpf)} €</td><td style="text-align:right">${fmtNum(base+iva-irpf)} €</td></tr>`;
+  }).join('');
 }
 
 // ========== CLIENTES ==========
