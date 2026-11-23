@@ -91,10 +91,10 @@ header > button.btn-ghost { margin-left: auto; }
 /* Menú: grande en Inicio, compacto en el resto */
 nav button .ico { margin-right: 6px; }
 body.en-inicio nav { grid-template-columns: repeat(4, 1fr); gap: 16px; margin-top: 14px; }
-body.en-inicio nav button { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 28px 6px; font-size: min(2.9rem, 3.4vw); font-weight: 600; letter-spacing: -0.5px; border-radius: 18px; min-height: 170px; background: #d6d3cd; border-color: #c4c0b8; color: #2b2620; }
+body.en-inicio nav button { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 28px 6px; font-size: min(2.9rem, 3.4vw); font-weight: 600; letter-spacing: -0.5px; border-radius: 18px; min-height: 170px; background: #d6d3cd; border: 2.5px solid #c4a06a; color: #2b2620; }
 body.en-inicio nav button .ico { font-size: 2.6rem; margin: 0; }
-body.en-inicio nav button.active { background: #d6d3cd; color: #2b2620; border-color: #c4c0b8; }
-body.en-inicio nav button:hover { background: #cac6bf; border-color: var(--accent); color: var(--accent); transform: translateY(-2px); box-shadow: 0 6px 14px rgba(60,45,20,.10); }
+body.en-inicio nav button.active { background: #d6d3cd; color: #2b2620; border-color: #c4a06a; }
+body.en-inicio nav button:hover { background: #cac6bf; border-color: #a8844d; color: var(--accent); transform: translateY(-2px); box-shadow: 0 6px 14px rgba(60,45,20,.10); }
 @media (max-width: 700px) { body.en-inicio nav { grid-template-columns: repeat(2, 1fr); gap: 10px; } body.en-inicio nav button { min-height: 120px; padding: 16px 4px; font-size: min(2.2rem, 6.6vw); } }
 .dash-mini h3 { font-size: 0.8rem; text-transform: uppercase; letter-spacing: .8px; }
 .dash-mini table td, .dash-mini table th { font-size: 0.78rem; padding: 6px 8px; }
